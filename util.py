@@ -1,7 +1,23 @@
 
+def gph_crop(nodes, edges):
+    "crops the graph to fit the image"
+    new_node = []
+    node_index = []
+    for i in range(len(nodes)):
+        if -4096.0 <= nodes[i][0] <= 4096.0 and -4096.0 <= nodes[i][1] <= 4096.0 : #this line is variable for area
+            new_node.append(nodes[i])
+            node_index.append(i)
+    
+    new_edge = []
+    for i in range(len(edges)):
+        if edges[i][0] in node_index and edges[i][1] in node_index:
+            new_edge.append(edges[i])
+    
+    return new_node, new_edge, node_index
+
 
 def gphtols(graph):
-    "convert .graph txt file to lists of nodes and edges"
+    "convert .graph txt file to lists of nodes and edges and flip along horizontal axis"
     ls_node = []
     ls_edge = []
 

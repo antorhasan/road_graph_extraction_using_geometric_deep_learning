@@ -1,4 +1,7 @@
+import networkx as nx 
+import matplotlib.pyplot as plt
 from util import *
+
 
 gph = open('../road_trc/dataset/data/graphs/amsterdam.graph', 'r')
 cont = gph.readlines()
@@ -7,32 +10,28 @@ ls_node, ls_edge = gphtols(cont)
 
 gph.close()
 
-#ls_edge = ls_edge[0:14]
-#ls_node = ls_node[0:10]
-#print(ls_edge)
-#print(ls_node)
-import networkx as nx 
-import matplotlib.pyplot as plt
+nodes, edges, index = gph_crop(ls_node, ls_edge)
+#print(nodes)
+#print(edges)
+#print(index)
 
 G = nx.Graph()
 
-#print(G.nodes.data())
-
-for i in range(len(ls_node)):
+for i in range(len(nodes)):
     #print(i)
-    G.add_node(i,coor=ls_node[i])
+    G.add_node(i,coor=nodes[i])
 
-for i in range(len(ls_edge)):
+for i in range(len(edges)):
     #print(i)
-    G.add_edge(*ls_edge[i])
+    G.add_edge(*edges[i])
 
-#print(len(ls_edge))
+#print(len(edges))
 #print(len(ls_node))
 
 #print(G.edges.data())
 #print(G.nodes.data())
 
-pos = dict(zip(range(len(ls_node)),ls_node))
-print(pos)
+pos = dict(zip(index, nodes))
+#print(pos)
 nx.draw(G, pos)
 plt.show()

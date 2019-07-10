@@ -34,7 +34,7 @@ def gphtols(graph):
             #print(ls_node)
         else:
             var = i
-            print(var)
+            #print(var)
             break
 
     for j in range(var+1,len(graph)):

@@ -11,15 +11,16 @@ ls_node, ls_edge = gphtols(cont)
 gph.close()
 
 nodes, edges, index = gph_crop(ls_node, ls_edge)
-#print(nodes)
+#print(len(nodes))
 #print(edges)
-#print(index)
+#print(len(index))
 
 G = nx.Graph()
-
-for i in range(len(nodes)):
+counter = 0
+for i in index:
     #print(i)
-    G.add_node(i,coor=nodes[i])
+    G.add_node(i,coor=nodes[counter])
+    counter += 1
 
 for i in range(len(edges)):
     #print(i)

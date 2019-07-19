@@ -29,8 +29,9 @@ var = dirtodic('/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/
 def mergeimg(lis):
     img_path = '/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/imagery/'
 
-    bos = sorted(lis['boston'])
-    bos = bos[0:31]
+
+    bos = sorted(lis['amsterdam'])
+    #bos = bos[0:31]
     numlis = []
     #for i in bos:
     for i in bos :
@@ -68,6 +69,7 @@ def mergeimg(lis):
             #prepre_num = new_rnum
             #print(prepre_num)
             #prepre_ls.append(prepre_num)
+            #print(pre_rnum,pre_cnum)
         elif int(new_rnum) != int(pre_rnum):
             if coun_con == 0 :
                 pre_con_img = pre_img
@@ -78,24 +80,18 @@ def mergeimg(lis):
                 continue
 
             new_con_img = pre_img
-            print(numlis[coun_con],numlis[coun_con-1])
             #if int(pre_rnum) > int(prepre_num):
-            print(coun_con)
+            print(numlis[coun_con],numlis[coun_con-1])
             if int(numlis[coun_con]) > int(numlis[coun_con-1]):
                 pre_con_img = cv2.hconcat([pre_con_img, new_con_img])
-                print('h')
+               
             else:
                 pre_con_img = cv2.hconcat([new_con_img, pre_con_img])
-                print('gd')
+                
             pre_rnum = new_rnum
             pre_cnum = new_cnum
             pre_img = cv2.imread(img_path + i)
             coun_con += 1
-            cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-            cv2.imshow('image',pre_con_img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows() 
-            
             
         coun += 1
 
@@ -104,7 +100,7 @@ def mergeimg(lis):
     cv2.waitKey(0)
     cv2.destroyAllWindows() 
 
-    print(coun)
+    cv2.imwrite('./data/superimg/amsterdam'+'.png', pre_con_img)
         
         
     return lis

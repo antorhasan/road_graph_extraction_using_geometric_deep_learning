@@ -1,3 +1,99 @@
+from os import listdir
+from os.path import isfile, join
+import cv2
+def dirtodic(path):
+    '''make a dict where the keys are common file name prefixes within a 
+    directroy. input : path, output: dict obj of filenames'''
+
+    dic = {}
+    onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+    
+    for i in onlyfiles:
+        for j in range(len(i)):
+            if i[j] == '_' :
+                var = i[0:j]
+                break
+        if var not in dic.keys() :
+            dic.update({ var : [i] })
+        else:
+            dic[var].append(i)
+
+    #print(dic.keys())
+    return dic
+
+
+print(len(dirtodic('/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/imagery')))
+
+var = dirtodic('/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/imagery')
+
+def mergeimg(lis):
+    img_path = '/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/imagery/'
+
+    bos = sorted(lis['boston'])
+    bos = bos[0:30]
+    #boslis = []
+    #for i in bos:
+    coun = 0
+    coun_con = 0
+    print(bos)
+    for i in bos:
+        splitted = i.split('_')
+
+        if coun == 0 :
+            pre_rnum = splitted[1]
+            pre_cnum = splitted[2]
+            pre_img = cv2.imread(img_path + i)
+            #print(pre_rnum, pre_cnum)
+            coun += 1
+            continue
+
+        new_rnum = splitted[1]
+        new_cnum = splitted[2]
+        new_img = cv2.imread(img_path + i)
+        if int(new_rnum) == int(pre_rnum) :
+            #print(new_cnum,pre_cnum)
+            if int(new_cnum) > int(pre_cnum) :
+                pre_img = cv2.vconcat([pre_img, new_img])
+            else :
+                pre_img = cv2.vconcat([new_img, pre_img])
+            pre_rnum = new_rnum
+            pre_cnum = new_cnum
+            prepre_num = new_rnum
+            #print(coun)
+        elif int(new_rnum) != int(pre_rnum):
+            if coun_con == 0 :
+                pre_con_img = pre_img
+                pre_rnum = new_rnum
+                pre_cnum = new_cnum
+                pre_img = cv2.imread(img_path + i)
+                coun_con += 1
+                continue
+
+            new_con_img = pre_img
+            print(prepre_num,pre_rnum)
+            if int(pre_rnum) > int(prepre_num):
+                pre_con_img = cv2.hconcat([pre_con_img, new_con_img])
+            else:
+                pre_con_img = cv2.hconcat([new_con_img, pre_con_img])
+            pre_rnum = new_rnum
+            pre_cnum = new_cnum
+            pre_img = cv2.imread(img_path + i)
+            coun_con += 1
+            
+            
+        coun += 1
+
+    cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+    cv2.imshow('image',pre_con_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows() 
+
+    print(coun)
+        
+        
+    return lis
+
+mergeimg(var)
 
 def gph_crop(nodes, edges):
     "crops the graph to fit the image"

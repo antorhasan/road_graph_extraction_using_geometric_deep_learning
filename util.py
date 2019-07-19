@@ -30,12 +30,19 @@ def mergeimg(lis):
     img_path = '/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/imagery/'
 
     bos = sorted(lis['boston'])
-    bos = bos[0:30]
-    #boslis = []
+    bos = bos[0:31]
+    numlis = []
     #for i in bos:
+    for i in bos :
+        numbers = i.split('_')
+        numlis.append(numbers[1])
+    numlis = list(dict.fromkeys(numlis))
+    print(numlis) 
+
     coun = 0
     coun_con = 0
     print(bos)
+    prepre_ls = []
     for i in bos:
         splitted = i.split('_')
 
@@ -58,8 +65,9 @@ def mergeimg(lis):
                 pre_img = cv2.vconcat([new_img, pre_img])
             pre_rnum = new_rnum
             pre_cnum = new_cnum
-            prepre_num = new_rnum
-            #print(coun)
+            #prepre_num = new_rnum
+            #print(prepre_num)
+            #prepre_ls.append(prepre_num)
         elif int(new_rnum) != int(pre_rnum):
             if coun_con == 0 :
                 pre_con_img = pre_img
@@ -70,15 +78,23 @@ def mergeimg(lis):
                 continue
 
             new_con_img = pre_img
-            print(prepre_num,pre_rnum)
-            if int(pre_rnum) > int(prepre_num):
+            print(numlis[coun_con],numlis[coun_con-1])
+            #if int(pre_rnum) > int(prepre_num):
+            print(coun_con)
+            if int(numlis[coun_con]) > int(numlis[coun_con-1]):
                 pre_con_img = cv2.hconcat([pre_con_img, new_con_img])
+                print('h')
             else:
                 pre_con_img = cv2.hconcat([new_con_img, pre_con_img])
+                print('gd')
             pre_rnum = new_rnum
             pre_cnum = new_cnum
             pre_img = cv2.imread(img_path + i)
             coun_con += 1
+            cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+            cv2.imshow('image',pre_con_img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows() 
             
             
         coun += 1

@@ -115,7 +115,43 @@ def mergeimg(lis):
 
         cv2.imwrite('./data/superimg/'+ w +'.png', pre_con_img)
         
+def crop(nodes, edges, name):
+    "crops the graph to fit the image"
+    img_path = './data/superimg/'
+    img = cv2.imread(img_path + name + '.png')
 
+    x_len = float((img.shape[0])/2)
+    y_len = float((img.shape[1])/2)
+
+    print(x_len,y_len)
+
+    new_node = []
+    node_index = []
+    for i in range(len(nodes)):
+        if -x_len <= nodes[i][0] <= x_len and -y_len <= nodes[i][1] <= y_len : #this line is variable for area
+            new_node.append(nodes[i])
+            node_index.append(i)
+    
+    new_edge = []
+    for i in range(len(edges)):
+        if edges[i][0] in node_index and edges[i][1] in node_index:
+            new_edge.append(edges[i])
+    dic_in = {}
+
+    for i in range(len(node_index)):
+        dic_in.update({node_index[i]:i})
+    #print(dic_in)
+
+    print(new_edge)
+    ed = []
+    for i in range(len(new_edge)):
+        a = dic_in[new_edge[i][0]]
+        b = dic_in[new_edge[i][1]]
+        ed.append(tuple([a,b]))
+
+    print(ed)
+
+    return new_node, new_edge, node_index
 
 
 

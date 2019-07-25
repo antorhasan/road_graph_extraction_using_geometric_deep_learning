@@ -119,12 +119,20 @@ def mergeimg(lis):
 
 
 
-def gph_crop(nodes, edges):
+def gph_crop(nodes, edges, name):
     "crops the graph to fit the image"
+    img_path = './data/superimg/'
+    img = cv2.imread(img_path + name + '.png')
+
+    x_len = float((img.shape[0])/2)
+    y_len = float((img.shape[1])/2)
+
+    print(x_len,y_len)
+
     new_node = []
     node_index = []
     for i in range(len(nodes)):
-        if -4096.0 <= nodes[i][0] <= 4096.0 and -4096.0 <= nodes[i][1] <= 4096.0 : #this line is variable for area
+        if -x_len <= nodes[i][0] <= x_len and -y_len <= nodes[i][1] <= y_len : #this line is variable for area
             new_node.append(nodes[i])
             node_index.append(i)
     

@@ -1,30 +1,59 @@
 import networkx as nx 
 import matplotlib.pyplot as plt
 from util import *
+import cv2
+from os import listdir
+from os.path import isfile, join
 
+def write_gph(path, nodes, edges):
+    '''given nodes and edges list of a graph, it is written as txt'''
+    with open(path, 'w') as f:
+        for item in nodes:
+            f.write("%s" % str(item[0]))
+            f.write(" ")
+            f.write("%s\n" % str(item[1]))
+        f.write("\n")
+        for e in edges:
+            f.write("%s" % str(e[0]))
+            f.write(" ")
+            f.write("%s\n" % str(e[1]))
 
-gph = open('../road_trc/dataset/data/graphs/amsterdam.graph', 'r')
-cont = gph.readlines()
-#print(len(cont))
-ls_node, ls_edge = gphtols(cont)
+def make_gph(nodes, edges, index):
+    '''a graph is visualized from nodes,edges and position'''
+    G = nx.Graph()
+    counter = 0
+    for i in index:
+        G.add_node(i,coor=nodes[counter])
+        counter += 1
 
-gph.close()
+    for i in range(len(edges)):
+        G.add_edge(*edges[i])
 
-nodes, edges, index = gph_crop(ls_node, ls_edge)
-#print(len(nodes))
-#print(edges)
-#print(len(index))
+    pos = dict(zip(index, nodes))
+    nx.draw(G, pos)
+    #plt.show()
 
-G = nx.Graph()
-counter = 0
-for i in index:
-    #print(i)
-    G.add_node(i,coor=nodes[counter])
-    counter += 1
+def crop_to_gph(gph_path):
+    '''crop graph txt according to given super img files'''
 
-for i in range(len(edges)):
-    #print(i)
-    G.add_edge(*edges[i])
+    f = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
+    #f = f[0:2]
+
+    for i in f :
+        gph = open(gph_path + i, 'r')
+        cont = gph.readlines()
+        #print(len(cont))
+        ls_node, ls_edge = gphtols(cont)
+        name = i.split('.')[0]
+        print(name)
+        gph.close()
+        nodes, edges, index = gph_crop(ls_node, ls_edge, name)
+        make_gph(nodes, edges, index)
+        write_gph('./data/supergph/'+ name +'.txt', nodes, edges)
+
+fol_path = '../road_trc/dataset/data/graphs/'
+
+crop_to_gph(fol_path)
 
 #print(len(edges))
 #print(len(ls_node))
@@ -32,20 +61,3 @@ for i in range(len(edges)):
 #print(G.edges.data())
 #print(G.nodes.data())
 
-pos = dict(zip(index, nodes))
-#print(pos)
-
-with open('./your_file.txt', 'w') as f:
-    for item in nodes:
-        f.write("%s" % str(item[0]))
-        f.write(" ")
-        f.write("%s\n" % str(item[1]))
-    f.write("\n")
-    for e in edges:
-        f.write("%s" % str(e[0]))
-        f.write(" ")
-        f.write("%s\n" % str(e[1]))
-
-
-#nx.draw(H)
-#plt.show()

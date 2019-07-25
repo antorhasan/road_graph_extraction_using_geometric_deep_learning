@@ -34,5 +34,18 @@ for i in range(len(edges)):
 
 pos = dict(zip(index, nodes))
 #print(pos)
-nx.draw(G, pos)
-plt.show()
+
+with open('./your_file.txt', 'w') as f:
+    for item in nodes:
+        f.write("%s" % str(item[0]))
+        f.write(" ")
+        f.write("%s\n" % str(item[1]))
+    f.write("\n")
+    for e in edges:
+        f.write("%s" % str(e[0]))
+        f.write(" ")
+        f.write("%s\n" % str(e[1]))
+
+
+#nx.draw(H)
+#plt.show()

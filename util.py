@@ -1,7 +1,8 @@
 from os import listdir
 from os.path import isfile, join
 import cv2
-
+import shapely      #needed for calculating intersections
+from shapely.geometry import LineString, Point
 
 def dirtodic(path):
     '''make a dict where the keys are common file name prefixes within a 
@@ -22,7 +23,6 @@ def dirtodic(path):
 
     #print(dic.keys())
     return dic
-
 
 #var = dirtodic('/media/antor/Stuff/projects/road_net/code/road_trc/dataset/data/imagery')
 
@@ -79,10 +79,7 @@ def mergeimg(lis):
                         pre_con_img = cv2.hconcat([pre_con_img, new_con_img])
                     else:
                         pre_con_img = cv2.hconcat([new_con_img, pre_con_img])
-                #prepre_num = new_rnum
-                #print(prepre_num)
-                #prepre_ls.append(prepre_num)
-                #print(pre_rnum,pre_cnum)
+
             elif int(new_rnum) != int(pre_rnum):
                 if coun_con == 0 :
                     pre_con_img = pre_img
@@ -115,6 +112,96 @@ def mergeimg(lis):
 
         cv2.imwrite('./data/superimg/'+ w +'.png', pre_con_img)
         
+
+def crop_p(nodes, edges, name):
+    '''crops the graph to fit the image and also handles cropping through edge lines'''
+
+    img_path = './data/superimg/'
+    img = cv2.imread(img_path + name + '.png')
+    
+    x_len = float((img.shape[0])/2)
+    y_len = float((img.shape[1])/2)
+
+    '''boundary lines'''
+    line1 = LineString([(-x_len, -y_len), (x_len, -y_len)])
+    line2 = LineString([(-x_len, -y_len), (-x_len, y_len)])
+    line3 = LineString([(-x_len, y_len), (x_len, y_len)])
+    line4 = LineString([(x_len, y_len), (x_len, -y_len)])
+
+    lis_lines = [line1, line2, line3, line4]
+    new_node = []
+    node_index = []
+
+    for i in range(len(edges)):
+        node_1 = nodes[edges[i][0]]
+        node_2 = nodes[edges[i][1]]
+
+        '''conditions for checking if the nodes are in boundary'''
+        cond_1 = -x_len <= node_1[0] <= x_len and -y_len <= node_1[1] <= y_len
+        cond_2 = -x_len <= node_2[0] <= x_len and -y_len <= node_2[1] <= y_len
+
+        '''the three possibilities'''
+        if (cond_1 == True) and (cond_2 == True) :
+            if node_1 not in new_node:
+                new_node.append(node_1)
+                node_index.append(edges[i][0])
+            if node_2 not in new_node:
+                new_node.append(node_2)
+                node_index.append(edges[i][1])
+
+        if (cond_1 == True) and (cond_2 == False) :
+            if node_1 not in new_node:
+                new_node.append(node_1)
+                node_index.append(edges[i][0])
+
+            line = LineString([tuple(node_1), tuple(node_2)])
+            for j in range(len(lis_lines)):
+                try:
+                    int_pt = line.intersection(lis_lines[j])
+                    point_of_intersection = int_pt.x, int_pt.y
+                except:
+                    continue
+            new_node.append(list(point_of_intersection))
+            node_index.append(edges[i][1])
+
+        
+        if (cond_1 == False) and (cond_2 == True) :
+            if node_2 not in new_node:
+                new_node.append(node_2)
+                node_index.append(edges[i][1])
+
+            line = LineString([tuple(node_1), tuple(node_2)])
+            for j in range(len(lis_lines)):
+                try:
+                    int_pt = line.intersection(lis_lines[j])
+                    point_of_intersection = int_pt.x, int_pt.y
+                except:
+                    continue
+            new_node.append(list(point_of_intersection))
+            node_index.append(edges[i][0])
+    
+    '''updating the edge list according to new nodes list'''
+    new_edge = []
+    for i in range(len(edges)):
+        if edges[i][0] in node_index and edges[i][1] in node_index:
+            new_edge.append(edges[i])
+    
+    dic_in = {}
+    '''updating node index to start from zero'''
+    for i in range(len(node_index)):
+        dic_in.update({node_index[i]:i})
+
+    '''updating edgelist using node index'''
+    ed = []
+    for i in range(len(new_edge)):
+        a = dic_in[new_edge[i][0]]
+        b = dic_in[new_edge[i][1]]
+        ed.append(tuple([a,b]))
+
+
+    return new_node, ed, range(len(node_index))
+
+
 def crop(nodes, edges, name):
     "crops the graph to fit the image"
     img_path = './data/superimg/'
@@ -123,7 +210,7 @@ def crop(nodes, edges, name):
     x_len = float((img.shape[0])/2)
     y_len = float((img.shape[1])/2)
 
-    print(x_len,y_len)
+    #print(x_len,y_len)
 
     new_node = []
     node_index = []
@@ -136,48 +223,25 @@ def crop(nodes, edges, name):
     for i in range(len(edges)):
         if edges[i][0] in node_index and edges[i][1] in node_index:
             new_edge.append(edges[i])
+    
     dic_in = {}
 
     for i in range(len(node_index)):
         dic_in.update({node_index[i]:i})
     #print(dic_in)
 
-    print(new_edge)
+    #print(new_edge)
     ed = []
     for i in range(len(new_edge)):
+        #for j in range(len(i)):
         a = dic_in[new_edge[i][0]]
         b = dic_in[new_edge[i][1]]
         ed.append(tuple([a,b]))
 
-    print(ed)
+    #print(ed)
 
-    return new_node, new_edge, node_index
+    return new_node, ed, range(len(node_index))
 
-
-
-def gph_crop(nodes, edges, name):
-    "crops the graph to fit the image"
-    img_path = './data/superimg/'
-    img = cv2.imread(img_path + name + '.png')
-
-    x_len = float((img.shape[0])/2)
-    y_len = float((img.shape[1])/2)
-
-    print(x_len,y_len)
-
-    new_node = []
-    node_index = []
-    for i in range(len(nodes)):
-        if -x_len <= nodes[i][0] <= x_len and -y_len <= nodes[i][1] <= y_len : #this line is variable for area
-            new_node.append(nodes[i])
-            node_index.append(i)
-    
-    new_edge = []
-    for i in range(len(edges)):
-        if edges[i][0] in node_index and edges[i][1] in node_index:
-            new_edge.append(edges[i])
-    
-    return new_node, new_edge, node_index
 
 
 def gphtols(graph):
@@ -192,6 +256,37 @@ def gphtols(graph):
             for j in range(len(lis)):
                 if j == 1 :
                     lis[j] = -float(lis[j])  #negative, to flip the image with respect to horizontal axis
+                else:
+                    lis[j] = float(lis[j])
+            ls_node.append(lis)
+            #print(ls_node)
+        else:
+            var = i
+            #print(var)
+            break
+
+    for j in range(var+1,len(graph)):
+        lis = graph[j].split()
+        #print(lis)
+        for k in range(len(lis)):
+            lis[k] = int(lis[k])        
+        ls_edge.append(tuple(lis))
+        #print(*ls_edge[j])
+    
+    return ls_node,ls_edge
+
+def gphtols_view(graph):
+    "convert .graph txt file to lists of nodes and edges and flip along horizontal axis"
+    ls_node = []
+    ls_edge = []
+
+    for i in range(len(graph)):
+
+        if graph[i]!='\n':
+            lis = graph[i].split()
+            for j in range(len(lis)):
+                if j == 1 :
+                    lis[j] = float(lis[j])  
                 else:
                     lis[j] = float(lis[j])
             ls_node.append(lis)

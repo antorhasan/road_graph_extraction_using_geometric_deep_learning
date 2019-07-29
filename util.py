@@ -121,7 +121,7 @@ def crop_p(nodes, edges, name):
     
     x_len = float((img.shape[0])/2)
     y_len = float((img.shape[1])/2)
-
+    
     '''boundary lines'''
     line1 = LineString([(-x_len, -y_len), (x_len, -y_len)])
     line2 = LineString([(-x_len, -y_len), (-x_len, y_len)])

@@ -3,6 +3,7 @@ from os.path import isfile, join
 import cv2
 import shapely      #needed for calculating intersections
 from shapely.geometry import LineString, Point
+from gph_crop import *
 
 def dirtodic(path):
     '''make a dict where the keys are common file name prefixes within a 
@@ -113,6 +114,102 @@ def mergeimg(lis):
         cv2.imwrite('./data/superimg/'+ w +'.png', pre_con_img)
         
 
+def crop_sub(nodes, edges, name):
+    '''crops the graph to fit the image and also handles cropping through edge lines'''
+
+    img_path = './data/superimg/'
+    img = cv2.imread(img_path + name + '.png')
+    
+    x_len = float((img.shape[0])/2)
+    y_len = float((img.shape[1])/2)
+
+    x_range = int((x_len*2)/256)
+    y_range = int((y_len*2)/256)
+
+    for k in range(y_range):
+        for h in range(x_range):
+
+            '''boundary lines'''
+            line1 = LineString([(-x_len+(256*h), y_len-(256*k)), (-x_len+(256*(h+1), y_len-(256*k])
+            line1 = LineString([(-x_len+(256*(h+1), y_len-(256*k)), (-x_len+(256*(h+1), y_len-(256*(k+1))])
+            line1 = LineString([(-x_len+(256*(h+1)), y_len-(256*(k+1)), (-x_len+(256*h), y_len-(256*(k+1))])
+            line1 = LineString([(-x_len+(256*h), y_len-(256*(k+1)), (-x_len+(256*h), y_len-(256*k)])
+
+            lis_lines = [line1, line2, line3, line4]
+            new_node = []
+            node_index = []
+
+            for g in range(len(edges)):
+                node_1 = nodes[edges[g][0]]
+                node_2 = nodes[edges[g][1]]
+
+                '''conditions for checking if the nodes are in boundary'''
+                cond_1 = -x_len+(256*h) <= node_1[0] <= -x_len+(256*(h+1)) and y_len-(256*(k+1)) <= node_1[1] <= y_len-(256*k)
+                cond_2 = -x_len+(256*h) <= node_2[0] <= -x_len+(256*(h+1)) and y_len-(256*(k+1)) <= node_2[1] <= y_len-(256*k)
+
+                '''the three possibilities'''
+                if (cond_1 == True) and (cond_2 == True) :
+                    if node_1 not in new_node:
+                        new_node.append(node_1)
+                        node_index.append(edges[g][0])
+                    if node_2 not in new_node:
+                        new_node.append(node_2)
+                        node_index.append(edges[g][1])
+
+                if (cond_1 == True) and (cond_2 == False) :
+                    if node_1 not in new_node:
+                        new_node.append(node_1)
+                        node_index.append(edges[g][0])
+
+                    line = LineString([tuple(node_1), tuple(node_2)])
+                    for j in range(len(lis_lines)):
+                        try:
+                            int_pt = line.intersection(lis_lines[j])
+                            point_of_intersection = int_pt.x, int_pt.y
+                        except:
+                            continue
+                    new_node.append(list(point_of_intersection))
+                    node_index.append(edges[g][1])
+
+                
+                if (cond_1 == False) and (cond_2 == True) :
+                    if node_2 not in new_node:
+                        new_node.append(node_2)
+                        node_index.append(edges[g][1])
+
+                    line = LineString([tuple(node_1), tuple(node_2)])
+                    for j in range(len(lis_lines)):
+                        try:
+                            int_pt = line.intersection(lis_lines[j])
+                            point_of_intersection = int_pt.x, int_pt.y
+                        except:
+                            continue
+                    new_node.append(list(point_of_intersection))
+                    node_index.append(edges[g][0])
+            
+            '''updating the edge list according to new nodes list'''
+            new_edge = []
+            for i in range(len(edges)):
+                if edges[i][0] in node_index and edges[i][1] in node_index:
+                    new_edge.append(edges[i])
+            
+            dic_in = {}
+            '''updating node index to start from zero'''
+            for i in range(len(node_index)):
+                dic_in.update({node_index[i]:i})
+
+            '''updating edgelist using node index'''
+            ed = []
+            for i in range(len(new_edge)):
+                a = dic_in[new_edge[i][0]]
+                b = dic_in[new_edge[i][1]]
+                ed.append(tuple([a,b]))
+            make_gph(new_node, ed, range(len(node_index)))
+            write_gph('./data/try/'+ name+str('_'+k)+str('_'+h)+'.txt', new_node, ed)
+
+#return new_node, ed, range(len(node_index))
+
+
 def crop_p(nodes, edges, name):
     '''crops the graph to fit the image and also handles cropping through edge lines'''
 
@@ -121,7 +218,7 @@ def crop_p(nodes, edges, name):
     
     x_len = float((img.shape[0])/2)
     y_len = float((img.shape[1])/2)
-    
+
     '''boundary lines'''
     line1 = LineString([(-x_len, -y_len), (x_len, -y_len)])
     line2 = LineString([(-x_len, -y_len), (-x_len, y_len)])

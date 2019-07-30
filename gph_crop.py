@@ -31,8 +31,8 @@ def make_gph(nodes, edges, index):
 
     pos = dict(zip(index, nodes))
     print(index)
-    #nx.draw(G, pos)
-    #plt.show()
+    nx.draw(G, pos)
+    plt.show()
 
 def crop_to_gph(gph_path):
     '''crop graph txt according to given super img files'''
@@ -68,9 +68,9 @@ def view_gph(path):
         #ls_node, ls_edge = gphtols(cont)
         make_gph(ls_node, ls_edge, range(len(ls_node))) 
 
-fol_path = '../road_trc/dataset/data/graphs/'
-crop_to_gph(fol_path)
-#fol_path = './data/'
+#fol_path = '../road_trc/dataset/data/graphs/'
+#crop_to_gph(fol_path)
+#fol_path = './data/supergph/'
 #f = [f for f in listdir(fol_path) if isfile(join(fol_path, f))]
 #f = f[0:2]
 

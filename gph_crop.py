@@ -1,6 +1,6 @@
 import networkx as nx 
 import matplotlib.pyplot as plt
-from util import *
+from util import gphtols_view
 import cv2
 from os import listdir
 from os.path import isfile, join
@@ -38,7 +38,7 @@ def crop_to_gph(gph_path):
     '''crop graph txt according to given super img files'''
 
     f = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
-    #f = f[0:2]
+    f = f[0:2]
 
     for i in f :
         gph = open(gph_path + i, 'r')

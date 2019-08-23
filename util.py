@@ -224,9 +224,10 @@ def crop_gph_256(nodes, edges, name):
                 a = dic_in[new_edge[k][0]]
                 b = dic_in[new_edge[k][1]]
                 ed.append(tuple([a,b]))
-            print(j)
+        
             write_gph('./data/gph_data/'+ name +'_'+str(i)+'_'+str(j)+'.txt', new_node, ed)
 
+        print(i)
 
 
 def crop_p(nodes, edges, name):

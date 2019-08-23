@@ -66,4 +66,4 @@ def gphtols_view(graph):
     
     return ls_node,ls_edge
 
-view_gph('./data/gph_data/')
+view_gph('./data/try/')

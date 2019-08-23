@@ -7,7 +7,7 @@ import cv2
 def view_gph(path):
     
     f = [f for f in listdir(path) if isfile(join(path, f))]
-    #f = f[0:2]
+    f = f[0:2]
     #print(f)
     for i in f :
         print(i)
@@ -66,4 +66,4 @@ def gphtols_view(graph):
     
     return ls_node,ls_edge
 
-view_gph('./data/try/')
+view_gph('./data/gph_data/')

@@ -1,6 +1,6 @@
 import networkx as nx 
 import matplotlib.pyplot as plt
-from util import gphtols_view
+from util import *
 import cv2
 from os import listdir
 from os.path import isfile, join
@@ -44,16 +44,19 @@ def crop_to_gph(gph_path):
         gph = open(gph_path + i, 'r')
         cont = gph.readlines()
         #print(len(cont))
-        ls_node, ls_edge = gphtols(cont)
+        ls_node, ls_edge = gphtols_view(cont)
+        #ls_node, ls_edge = gphtols(cont)
         name = i.split('.')[0]
         print(name)
         #print(ls_edge)
         gph.close()
         #nodes, edges, index = gph_crop(ls_node, ls_edge, name)
-        nodes, edges, index = crop_p(ls_node, ls_edge, name)
-
-        make_gph(nodes, edges, index)
-        write_gph('./data/supergph/'+ name +'.txt', nodes, edges)
+        
+        #nodes, edges, index = crop_p(ls_node, ls_edge, name)
+        crop_gph_256(ls_node, ls_edge, name)
+        #make_gph(nodes, edges, index)
+        #write_gph('./data/try/'+ name +'.txt', nodes, edges)
+crop_to_gph('./data/try/')
 
 def view_gph(path):
     
@@ -67,6 +70,7 @@ def view_gph(path):
         ls_node, ls_edge = gphtols_view(cont)
         #ls_node, ls_edge = gphtols(cont)
         make_gph(ls_node, ls_edge, range(len(ls_node))) 
+
 
 #fol_path = '../road_trc/dataset/data/graphs/'
 #crop_to_gph(fol_path)

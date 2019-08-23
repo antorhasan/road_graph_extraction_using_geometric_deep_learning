@@ -3,7 +3,20 @@ from os.path import isfile, join
 import cv2
 import shapely      #needed for calculating intersections
 from shapely.geometry import LineString, Point
-from gph_crop import *
+#from gph_crop import write_gph
+def write_gph(path, nodes, edges):
+    '''given nodes and edges list of a graph, it is written as txt'''
+    with open(path, 'w') as f:
+        for item in nodes:
+            f.write("%s" % str(item[0]))
+            f.write(" ")
+            f.write("%s\n" % str(item[1]))
+        f.write("\n")
+        for e in edges:
+            f.write("%s" % str(e[0]))
+            f.write(" ")
+            f.write("%s\n" % str(e[1]))
+
 
 def dirtodic(path):
     '''make a dict where the keys are common file name prefixes within a 
@@ -112,6 +125,108 @@ def mergeimg(lis):
         cv2.destroyAllWindows() 
 
         cv2.imwrite('./data/superimg/'+ w +'.png', pre_con_img)
+
+def crop_gph_256(nodes, edges, name):
+    '''crops the graph to fit the image and also handles cropping through edge lines'''
+
+    img_path = './data/superimg/'
+    img = cv2.imread(img_path + name + '.png')
+    
+    x_len = float((img.shape[0])/2)
+    y_len = float((img.shape[1])/2)
+
+    for i in range(int(img.shape[1]/256)):
+        
+        for j in range(int(img.shape[0]/256)):
+
+            '''boundary lines'''
+            line1 = LineString([(-x_len+(j*256), y_len-(i*256)), (-x_len+((j+1)*256), y_len-(i*256))])
+            line2 = LineString([(-x_len+((j+1)*256), y_len-(i*256)), (-x_len+((j+1)*256), y_len-((i+1)*256))])
+            line3 = LineString([(-x_len+((j+1)*256), y_len-((i+1)*256)), (-x_len+(j*256), y_len-((i+1)*256))])
+            line4 = LineString([(-x_len+(j*256), y_len-((i+1)*256)), (-x_len+(j*256), y_len-(i*256))])
+            #print(-x_len+(j*256),y_len-(i*256),-x_len+((j+1)*256),y_len-((i+1)*256))
+            lis_lines = [line1, line2, line3, line4]
+            new_node = []
+            node_index = []
+            
+            for k in range(len(edges)):
+                node_1 = nodes[edges[k][0]]
+                node_2 = nodes[edges[k][1]]
+
+                '''conditions for checking if the nodes are in boundary'''
+                cond_1 = (-x_len+(j*256)) <= node_1[0] <= (-x_len+((j+1)*256)) and (y_len-((i+1)*256)) <= node_1[1] <= (y_len-(i*256))
+                cond_2 = (-x_len+(j*256)) <= node_2[0] <= (-x_len+((j+1)*256)) and (y_len-((i+1)*256)) <= node_2[1] <= (y_len-(i*256))
+                #print(node_1,node_2,(-x_len+(j*256)),(-x_len+((j+1)*256)),(y_len-(i*256)),(y_len-((i+1)*256)))
+                
+                #print(cond_1,cond_2)
+                #print('edge iteration')
+                '''the three possibilities'''
+                if (cond_1 == True) and (cond_2 == True) :
+
+                    if node_1 not in new_node:
+                        new_node.append(node_1)
+                        node_index.append(edges[k][0])
+                    if node_2 not in new_node:
+                        new_node.append(node_2)
+                        node_index.append(edges[k][1])
+
+                    #print('both true')
+
+                if (cond_1 == True) and (cond_2 == False) :
+                    if node_1 not in new_node:
+                        new_node.append(node_1)
+                        node_index.append(edges[k][0])
+
+                    line = LineString([tuple(node_1), tuple(node_2)])
+                    for l in range(len(lis_lines)):
+                        try:
+                            int_pt = line.intersection(lis_lines[l])
+                            point_of_intersection = int_pt.x, int_pt.y
+                        except:
+                            continue
+                    new_node.append(list(point_of_intersection))
+                    node_index.append(edges[k][1])
+
+                    #print('one true')
+
+                
+                if (cond_1 == False) and (cond_2 == True) :
+                    if node_2 not in new_node:
+                        new_node.append(node_2)
+                        node_index.append(edges[k][1])
+
+                    line = LineString([tuple(node_1), tuple(node_2)])
+                    for l in range(len(lis_lines)):
+                        try:
+                            int_pt = line.intersection(lis_lines[l])
+                            point_of_intersection = int_pt.x, int_pt.y
+                        except:
+                            continue
+                    new_node.append(list(point_of_intersection))
+                    node_index.append(edges[k][0])
+
+                    #print('two true')
+            
+            '''updating the edge list according to new nodes list'''
+            new_edge = []
+            for k in range(len(edges)):
+                if edges[k][0] in node_index and edges[k][1] in node_index:
+                    new_edge.append(edges[k])
+            
+            dic_in = {}
+            '''updating node index to start from zero'''
+            for k in range(len(node_index)):
+                dic_in.update({node_index[k]:k})
+
+            '''updating edgelist using node index'''
+            ed = []
+            for k in range(len(new_edge)):
+                a = dic_in[new_edge[k][0]]
+                b = dic_in[new_edge[k][1]]
+                ed.append(tuple([a,b]))
+            print(j)
+            write_gph('./data/gph_data/'+ name +'_'+str(i)+'_'+str(j)+'.txt', new_node, ed)
+
 
 
 def crop_p(nodes, edges, name):

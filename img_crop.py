@@ -1,6 +1,7 @@
 import cv2
 
-img = cv2.imread('../road_trc/dataset/data/imagery/amsterdam_0_0_sat.png', 1)
+#img = cv2.imread('../road_trc/dataset/data/imagery/amsterdam_0_0_sat.png', 1)
+img = cv2.imread('./data/superimg/amsterdam.png')
 #print(im.shape)
 
 """ for i in range(8):
@@ -14,7 +15,7 @@ img = cv2.imread('../road_trc/dataset/data/imagery/amsterdam_0_0_sat.png', 1)
 for i in range(4):
     for j in range(4):
 
-        im = img[1024*i:1024*(i+1),1024*j:1024*(j+1)]
+        im = img[256*i:256*(i+1),256*j:256*(j+1)]
 
        
         cv2.imwrite('./data/img/amsterdam'+str(i)+str(j)+'.png', im)

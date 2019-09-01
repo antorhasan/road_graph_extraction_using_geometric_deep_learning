@@ -4,10 +4,26 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import cv2
 
+def path_sort(path):
+    '''gets a path as input and returns a list of sorted filenames'''
+    image_path = path
+    img_lis = [f for f in listdir(image_path) if isfile(join(image_path, f))]
+    for i in range(len(img_lis)):
+
+        img_lis[i] = img_lis[i].split('_')
+
+    '''sort the data'''
+    for i in range(len(img_lis)):
+        img_lis[i] = int(img_lis[i].split('.')[0])
+    img_lis.sort()
+
+    return img_lis
+#path_sort('./data/gph_data/')
+
 def view_gph(path):
     
     f = [f for f in listdir(path) if isfile(join(path, f))]
-    f = f[0:7]
+    #f = f[0:7]
     #print(f)
     for i in f :
         print(i)

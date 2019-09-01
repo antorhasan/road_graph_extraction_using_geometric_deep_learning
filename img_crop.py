@@ -12,13 +12,13 @@ img = cv2.imread('./data/superimg/amsterdam.png')
        
         cv2.imwrite('./data/img/amsterdam'+str(i)+str(j)+'.png', im)
  """
-for i in range(4):
-    for j in range(4):
+for i in range(32):
+    for j in range(32):
 
         im = img[256*i:256*(i+1),256*j:256*(j+1)]
 
        
-        cv2.imwrite('./data/img/amsterdam'+str(i)+str(j)+'.png', im)
+        cv2.imwrite('./data/img/amsterdam_'+str(i)+'_'+str(j)+'.png', im)
 
 """ cv2.namedWindow('image', cv2.WINDOW_NORMAL)
 cv2.imshow('image',im)

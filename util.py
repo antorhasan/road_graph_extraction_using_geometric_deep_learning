@@ -393,7 +393,8 @@ def gphtols(graph):
     return ls_node,ls_edge
 
 def gphtols_view(graph):
-    "convert .graph txt file to lists of nodes and edges and flip along horizontal axis"
+    '''convert .graph txt file to lists of nodes and edges, does not flip along horizontal axis
+    and ready it for further processing so that it can viewed'''
     ls_node = []
     ls_edge = []
 

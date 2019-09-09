@@ -25,7 +25,7 @@ def createDataRecord(out_filename, addrs_y):
 
     writer = tf.python_io.TFRecordWriter(out_filename)
     for i in range(len(addrs_y)):
-        print(addrs_y[i])
+        print(i)
 
         img_y = cv2.imread(path + str(addrs_y[i]))
 
@@ -33,7 +33,8 @@ def createDataRecord(out_filename, addrs_y):
         gph = open('./data/test/gph/' + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont)
-        
+        if len(ls_node)==0 :
+            continue
         node_attr = np.asarray(ls_node)
         print(node_attr)
         node_attr = (a*((node_attr - mean)/std))+b

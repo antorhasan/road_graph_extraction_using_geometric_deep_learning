@@ -39,9 +39,9 @@ def view_gph(path):
             continue
         arr.append(node)
     arr = np.asarray(arr)
-    np.save('./data/numpy_arrays/num_nodes', arr)
-    plt.hist(arr,bins=200)
-    plt.show()
+    #np.save('./data/numpy_arrays/num_nodes', arr)
+    #plt.hist(arr,bins=200)
+    #plt.show()
 
 class create_gph():
     '''a graph is visualized from nodes,edges and position'''
@@ -84,13 +84,13 @@ def make_gph(nodes, edges, index):
     #A = nx.adjacency_matrix(G)
     #print(A.todense())
     #print(G.nodes())
-    #nx.draw(G, pos)
-    #plt.show()
+    nx.draw(G, pos)
+    plt.show()
     return G.number_of_nodes()
 
 
 def gphtols_view(graph):
-    "convert .graph txt file to lists of nodes and edges and flip along horizontal axis"
+    "convert .graph txt file to lists of nodes and edges and does not flip along horizontal axis"
     ls_node = []
     ls_edge = []
 
@@ -123,3 +123,4 @@ def gphtols_view(graph):
 #view_gph('./data/test/gph/')
 #view_gph('./data/gph_data/')
 #print(np.load('./data/numpy_arrays/num_nodes.npy'))
+view_gph('./data/test/gph/')

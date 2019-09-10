@@ -9,8 +9,6 @@ from new import *
 
 
 
-
-
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 def _int64_feature(value):
@@ -22,28 +20,38 @@ def createDataRecord(out_filename, addrs_y):
     std = np.load('./data/numpy_arrays/first/std.npy')
     a = np.load('./data/numpy_arrays/first/a.npy')
     b = np.load('./data/numpy_arrays/first/b.npy')
-
+    num_n = []
     writer = tf.python_io.TFRecordWriter(out_filename)
     for i in range(len(addrs_y)):
-        print(i)
-
+        #print(i)
+        if i == 0 :
+            print(addrs_y[i])
         img_y = cv2.imread(path + str(addrs_y[i]))
-
-        img_y = np.asarray(img_y)
+        img_y = img_y/255
+        img_y = np.asarray(img_y,dtype=np.float32)
+        
         gph = open('./data/test/gph/' + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont)
+        if i == 0 :
+            print(ls_node)
         if len(ls_node)==0 :
             continue
-        node_attr = np.asarray(ls_node)
-        print(node_attr)
+        node_attr = np.asarray(ls_node,dtype=np.float32)
+        #print(node_attr)
         node_attr = (a*((node_attr - mean)/std))+b
         #print(node_attr)
         #ls_node, ls_edge = gphtols(cont)
         #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
         graph = create_gph(ls_node, ls_edge, range(len(ls_node)))
-        num_nodes = np.asarray(graph.get_num_nodes())
+        num_nodes = np.asarray(graph.get_num_nodes(),dtype=np.float32)
         adj_mtx = graph.get_adj()
+        adj_mtx = np.asarray(adj_mtx,dtype=np.float32)
+        num_n.append(num_nodes)
+
+        if i == 0 :
+            print(node_attr,node_attr.shape)
+            print(adj_mtx)
 
         feature = {
             'image_y': _bytes_feature(img_y.tostring()),
@@ -59,11 +67,12 @@ def createDataRecord(out_filename, addrs_y):
     writer.close()
     sys.stdout.flush()
 
-
+    print(np.amax(num_n),np.amin(num_n))
 path = "./data/test/img/"
 
 trainY_list = [f for f in listdir(path) if isfile(join(path, f))]
-#trainY_list = trainY_list[0:3]
+
+trainY_list = trainY_list[0:3]
 
 #trainY = 
 

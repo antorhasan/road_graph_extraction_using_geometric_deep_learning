@@ -77,6 +77,7 @@ dataset = dataset.map(_parse_function)
 #dataset = dataset.batch(3)
 
 
+
 for i,j,k,l in dataset:
     
     i = np.reshape(i, (256,256,3))
@@ -87,5 +88,5 @@ for i,j,k,l in dataset:
     #l = np.reshape(i, (256,256,3))
     #print(l)
     print(i,j,k,l)
-    
+
     break

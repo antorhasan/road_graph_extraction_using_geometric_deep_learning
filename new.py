@@ -123,4 +123,9 @@ def gphtols_view(graph):
 #view_gph('./data/test/gph/')
 #view_gph('./data/gph_data/')
 #print(np.load('./data/numpy_arrays/num_nodes.npy'))
-view_gph('./data/test/gph/')
+#view_gph('./data/test/gph/')
+
+if __name__ == "__main__":
+    #view_gph('./data/test/sort/')
+    arr = np.load('./data/numpy_arrays/num_nodes.npy')
+    print(np.amax(arr))

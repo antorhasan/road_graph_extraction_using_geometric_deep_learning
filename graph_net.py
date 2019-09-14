@@ -49,14 +49,34 @@ class MyModel(tf.keras.Model):
     def __init__(self):
         super(MyModel, self).__init__()
         
-        self.conv1 = Conv2D(100,bias_initializer=tf.keras.initializers.constant(.01),activation='relu')
-        self.dense1 = Dense(100, activation='relu',bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal')
-        self.dense2 = Dense(1, activation='tanh',bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal')
+        self.conv1 = Conv2D(3,(9,9),strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv2 = Conv2D(3,(9,9),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv3 = Conv2D(3,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv4 = Conv2D(2,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv5 = Conv2D(2,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv6 = Conv2D(2,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv7 = Conv2D(1,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv8 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv9 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+
+        '''num nodes ops'''
+        self.conv10 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='hard_sigmoid',kernel_initializer='he_normal')
+        self.flat1 = 
+        #self.dense1 = Dense(100, activation='relu',bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal')
+        #self.dense2 = Dense(1, activation='tanh',bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal')
 
     def call(self, inputs):
-        x = self.lstm(inputs)
-        #x = self.dense1(x)
-        x = self.dense2(x)
+        x = self.conv1(inputs)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = self.conv6(x)
+        x = self.conv7(x)
+        x = self.conv8(x)
+        o = self.conv9(x)
+
+        a = self.conv10(o)
         return x
 
     def compute_output_shape(self, input_shape):
@@ -68,12 +88,17 @@ class MyModel(tf.keras.Model):
         return tf.TensorShape(shape)
 
     def model(self):
-        x = tf.keras.layers.Input(shape=(27, 1))
+        x = tf.keras.layers.Input(shape=(256,256, 3))
 
         return tf.keras.Model(inputs=[x], outputs=self.call(x)).summary()
 
-dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
-dataset = dataset.map(_parse_function)
+
+model = MyModel()
+model.model()
+
+
+#dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
+#dataset = dataset.map(_parse_function)
 #dataset = dataset.batch(3)
 
 

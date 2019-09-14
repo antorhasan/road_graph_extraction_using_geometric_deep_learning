@@ -1,5 +1,5 @@
 import tensorflow as tf 
-from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import Conv2D, Flatten, Dense
 import numpy as np
 
 tf.enable_eager_execution()
@@ -43,25 +43,58 @@ def _parse_function(example_proto):
     return image_y, gph_nodes, gph_adj, gph_node_num
 
 
+class SLayer():
+    def __init__(self,num_nodes ):
+        super(SLayer, self).__init__()
+        #self.num_nodes = num_nodes
+        self.filters = None
+
+
+    def call(self, input, num_nodes):
+        self.filters = num_nodes
+
+class MyDenseLayer(tf.keras.layers.Layer):
+    def __init__(self, num_outputs):
+        super(MyDenseLayer, self).__init__()
+        #self.input_dim = num_outputs
+
+    def build(self, input_shape):
+        self.kernel = self.add_variable("kernel",shape=[int(input_shape[-1]),self.num_outputs])
+        self.w = self.add_weight(shape=(),
+                             initializer='random_normal',
+                             trainable=True)
+        self.b = self.add_weight(shape=(self.units,),
+                             initializer='random_normal',
+                             trainable=True)
+
+    def call(self, inputs):
+        output = tf.nn.conv2d(inputs, W, strides=stride, padding="VALID", name="conv")
+        return tf.matmul(input, self.kernel)
+
+
 
 class MyModel(tf.keras.Model):
 
     def __init__(self):
         super(MyModel, self).__init__()
         
-        self.conv1 = Conv2D(3,(9,9),strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv2 = Conv2D(3,(9,9),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv3 = Conv2D(3,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv4 = Conv2D(2,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv5 = Conv2D(2,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv6 = Conv2D(2,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv7 = Conv2D(1,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv8 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv9 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv1 = Conv2D(8,(9,9),strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv2 = Conv2D(16,(9,9),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv3 = Conv2D(32,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv4 = Conv2D(64,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv5 = Conv2D(80,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv6 = Conv2D(96,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv7 = Conv2D(128,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv8 = Conv2D(144,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv9 = Conv2D(176,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
 
         '''num nodes ops'''
         self.conv10 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='hard_sigmoid',kernel_initializer='he_normal')
-        self.flat1 = 
+        self.flat1 = Flatten()
+        self.dense1 = Dense(1,bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal', activation='sigmoid')
+
+        '''adj mat ops'''
+        self.conv11 = SLayer()
         #self.dense1 = Dense(100, activation='relu',bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal')
         #self.dense2 = Dense(1, activation='tanh',bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal')
 
@@ -77,7 +110,14 @@ class MyModel(tf.keras.Model):
         o = self.conv9(x)
 
         a = self.conv10(o)
-        return x
+        a = self.flat1(a)
+        a = self.dense1(a)
+
+        num_nodes = int(208*a)
+        s = self.conv11(o,num_nodes)
+
+
+        return s
 
     def compute_output_shape(self, input_shape):
         # You need to override this function if you want to use the subclassed model

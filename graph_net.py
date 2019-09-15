@@ -21,15 +21,6 @@ def _parse_function(example_proto):
     gph_nodes = tf.decode_raw(parsed_features["gph_nodes"],  tf.float32)
     gph_adj = tf.decode_raw(parsed_features["gph_adj"],  tf.float32)
     gph_node_num = tf.decode_raw(parsed_features["gph_node_num"],  tf.float32)
-
-    #size = np.asarray(gph_node_num, dtype = np.int32)
-    #ize = int(size)
-    #image_y = tf.reshape(image_y,[256,256,3])
-    #size = tf.dtypes.cast(gph_node_num, dtype=tf.int64)
-    #gph_nodes = tf.reshape(gph_nodes,[14,2])
-    #gph_adj = tf.reshape(image_y,[size,size])
-    #image_y = tf.reshape(image_y,[256,256,3])
-    #image_y = tf.cast(image_y, dtype=tf.float32)
     gph_nodes = tf.dtypes.cast(gph_nodes,dtype = tf.float32)
     """ mean = np.load('./data/numpy_arrays/thin_line/mean.npy')
     std = np.load('./data/numpy_arrays/thin_line/std.npy')
@@ -146,12 +137,12 @@ dataset = dataset.map(_parse_function)
 for i,j,k,l in dataset:
     
     i = np.reshape(i, (256,256,3))
-    k = np.reshape(k, (14,14))
-    k = np.transpose(k)
-    #j = np.reshape(j, (int(l),2))
+    k = np.reshape(k, (9,9))
+    #k = np.transpose(k)
+    j = np.reshape(j, (9,2))
     #k = np.reshape(i, (256,256,3))
     #l = np.reshape(i, (256,256,3))
     #print(l)
     print(i,j,k,l)
-
+    #print(l)
     break

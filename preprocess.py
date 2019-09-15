@@ -6,6 +6,7 @@ import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
 from new import *
+import matplotlib.pyplot as plt
 
 
 
@@ -20,38 +21,49 @@ def createDataRecord(out_filename, addrs_y):
     std = np.load('./data/numpy_arrays/first/std.npy')
     a = np.load('./data/numpy_arrays/first/a.npy')
     b = np.load('./data/numpy_arrays/first/b.npy')
-    num_n = []
+
+    an = np.load('./data/numpy_arrays/nodes/a.npy')
+    bn = np.load('./data/numpy_arrays/nodes/b.npy')
+    
+    #num_n = []
     writer = tf.python_io.TFRecordWriter(out_filename)
     for i in range(len(addrs_y)):
-        #print(i)
+        print(i)
         if i == 0 :
             print(addrs_y[i])
-        img_y = cv2.imread(path + str(addrs_y[i]))
+        img_y = cv2.imread('./data/test/img/' + str(addrs_y[i]))
         img_y = img_y/255
         img_y = np.asarray(img_y,dtype=np.float32)
         
-        gph = open('./data/test/gph/' + addrs_y[i].split('.')[0] + '.txt', 'r')
+        gph = open('./data/test/sort/' + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont)
         if i == 0 :
             print(ls_node)
         if len(ls_node)==0 :
             continue
-        node_attr = np.asarray(ls_node,dtype=np.float32)
-        #print(node_attr)
-        node_attr = (a*((node_attr - mean)/std))+b
+        #node_attr = np.asarray(ls_node,dtype=np.float32)
+        #print(ls_node)
+        node_attr = (a*((ls_node - mean)/std))+b
+        node_attr = np.asarray(node_attr,dtype=np.float32)
         #print(node_attr)
         #ls_node, ls_edge = gphtols(cont)
         #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
         graph = create_gph(ls_node, ls_edge, range(len(ls_node)))
-        num_nodes = np.asarray(graph.get_num_nodes(),dtype=np.float32)
+        num_nodes = graph.get_num_nodes()
+
+        num_nodes = (an*num_nodes)+bn
+
+        num_nodes = np.asarray(num_nodes,dtype=np.float32)
         adj_mtx = graph.get_adj()
         adj_mtx = np.asarray(adj_mtx,dtype=np.float32)
-        num_n.append(num_nodes)
+        #num_n.append(num_nodes)
 
         if i == 0 :
             print(node_attr,node_attr.shape)
             print(adj_mtx)
+            print(num_nodes)
+            print(img_y)
 
         feature = {
             'image_y': _bytes_feature(img_y.tostring()),
@@ -67,7 +79,7 @@ def createDataRecord(out_filename, addrs_y):
     writer.close()
     sys.stdout.flush()
 
-    print(np.amax(num_n),np.amin(num_n))
+    #print(np.amax(num_n),np.amin(num_n))
 
 def create_data():
     path = "./data/test/img/"
@@ -147,17 +159,23 @@ def duplicate_removal(filename,outputfile):
     
 def dup_remove():
     #give input file path here
-    inputfilename = "./data/test/gph/amsterdam_0_0.txt"
-    outputname = inputfilename.split('/')[-1]
-    outputname = './data/test/mod/'+ outputname
+    path = './data/test/gph/'
+    path_lis = [f for f in listdir(path) if isfile(join(path, f))]
+    for i in range(len(path_lis)):
 
-    outputfile = open(outputname,'w+')
+        inputfilename = "./data/test/gph/"+path_lis[i]
+        outputname = inputfilename.split('/')[-1]
+        outputname = './data/test/mod/'+ outputname
 
-    duplicate_removal(inputfilename,outputfile)
+        outputfile = open(outputname,'w+')
 
-    outputfile.close()
+        duplicate_removal(inputfilename,outputfile)
 
-def sorting_latlng(inputfilename):
+        outputfile.close()
+
+
+
+def sorting_latlng(inputfilename,outputfile):
     with open(inputfilename) as f:
         lines = f.readlines()
     lines = [x.strip() for x in lines]
@@ -185,22 +203,22 @@ def sorting_latlng(inputfilename):
     edgenum += 1
 
     #sorting
-    lnglat = sorted(lnglat, key=lambda l:l[0]) #sorted on the basis of longitude
+    lnglat = sorted(lnglat, key=lambda l:l[1], reverse=True) #sorted on the basis of latitude
     #print(lnglat)
     #print('------------------------------------------------')
 
     i = 0
     j = 0
     while i < (len(lnglat)-1):
-        if lnglat[i][0] == lnglat[i+1][0]:
+        if lnglat[i][1] == lnglat[i+1][1]:
             j = i+1
             while j < (len(lnglat)-1):
-                if lnglat[j][0] != lnglat[j+1][0]:
+                if lnglat[j][1] != lnglat[j+1][1]:
                     break 
                 j += 1
 
             temp = lnglat[i:j+1]
-            temp = sorted(temp, key=lambda l:l[1], reverse=True)
+            temp = sorted(temp, key=lambda l:l[0])
             lnglat[i:j+1] = temp
             i = j 
 
@@ -219,7 +237,6 @@ def sorting_latlng(inputfilename):
 
         lst = [ind1, ind2]
         newEdges.append(lst)
-
     
     #printing in output file
     for l in lnglat:
@@ -231,16 +248,75 @@ def sorting_latlng(inputfilename):
     for l in newEdges:
         s = str(l[0]) + " " + str(l[1]) + "\n"
         outputfile.write(s)
+
+def sort_latlon():
+    #input file to be sorted
+    path = './data/test/mod/'
+    path_lis = [f for f in listdir(path) if isfile(join(path, f))]
+    for i in range(len(path_lis)):
+
+        inputfilename = "./data/test/mod/"+path_lis[i]
     
+        outputname = inputfilename.split('/')[-1]
+        outputname = './data/test/sort/'+ outputname
+        outputfile = open(outputname, 'w+')
 
 
-#input file to be sorted
-inputfilename = './data/test/mod/amsterdam_0_0.txt'
-
-outputname = 'SORTED' + inputfilename.split('/')[-1]
-outputfile = open(outputname, 'w+')
-
-sorting_latlng(inputfilename)
-outputfile.close()
+        sorting_latlng(inputfilename,outputfile)
+        outputfile.close()
 
 
+def mean_std(data, folder):
+    '''given a numpy array, calculate and save mean and std'''
+    data = np.asarray(data)
+    mean = np.mean(data, axis=0)
+    std = np.std(data, axis=0)
+    np.save('./data/numpy_arrays/'+folder+'/mean', mean)
+    np.save('./data/numpy_arrays/'+folder+'/std', std)
+    #print(data.shape)
+    #print(mean.shape)
+    #print(mean)
+    #print(meam)
+    #print(std.shape)
+    return mean, std
+
+def change_range(data,folder):
+    newmin = -1
+    newmax = 1
+    newR = newmax - newmin
+    oldmin = np.amin(data)
+    oldmax = np.amax(data)
+    oldR = oldmax-oldmin
+    a = newR / oldR
+    b = newmin - ((oldmin*newR)/oldR)
+    new_data = (data*a) + b
+    np.save('./data/numpy_arrays/'+folder+'/a', a)
+    np.save('./data/numpy_arrays/'+folder+'/b', b)
+    return new_data,a,b
+
+def num_array():
+    '''save mean,std,a,b of number of nodes of the graphs'''
+    
+    arr = np.load('./data/numpy_arrays/num_nodes.npy')
+    plt.hist(arr, bins=200)
+    plt.show()
+    print(arr)
+    #arr = [x for x in arr if x < 60]
+    arr = np.log(arr)
+    plt.hist(arr, bins=200)
+    plt.show()
+    #mean, std = mean_std(arr,'nodes')
+    new,a,b = change_range(arr,'nodes')
+    #print(mean,std,a,b)
+    #arr = (arr-mean)/std
+    #plt.hist(arr, bins=200)
+    #plt.show()
+    arr = (a*arr)+b
+    plt.hist(arr, bins=200)
+    plt.show()
+
+if __name__ == "__main__":
+    #dup_remove()
+    #sort_latlon()
+    #num_array()
+    create_data()

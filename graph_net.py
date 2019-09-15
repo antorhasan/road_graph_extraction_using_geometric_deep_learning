@@ -1,9 +1,17 @@
 import tensorflow as tf 
 from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax
 import numpy as np
+import math
 
 tf.enable_eager_execution()
 
+node_mean = np.load('./data/numpy_arrays/first/mean.npy')
+node_std = np.load('./data/numpy_arrays/first/std.npy')
+node_a = np.load('./data/numpy_arrays/first/a.npy')
+node_b = np.load('./data/numpy_arrays/first/b.npy')
+
+num_a = np.load('./data/numpy_arrays/nodes/a.npy')
+num_b = np.load('./data/numpy_arrays/nodes/b.npy')
 
 
 def _parse_function(example_proto):
@@ -21,15 +29,6 @@ def _parse_function(example_proto):
     gph_nodes = tf.decode_raw(parsed_features["gph_nodes"],  tf.float32)
     gph_adj = tf.decode_raw(parsed_features["gph_adj"],  tf.float32)
     gph_node_num = tf.decode_raw(parsed_features["gph_node_num"],  tf.float32)
-    gph_nodes = tf.dtypes.cast(gph_nodes,dtype = tf.float32)
-    """ mean = np.load('./data/numpy_arrays/thin_line/mean.npy')
-    std = np.load('./data/numpy_arrays/thin_line/std.npy')
-    a = np.load('./data/numpy_arrays/thin_line/a.npy')
-    b = np.load('./data/numpy_arrays/thin_line/b.npy')
-
-    image_y = (image_y-mean)/std
-
-    image_y = (image_y*a) + b  """ 
     
     return image_y, gph_nodes, gph_adj, gph_node_num
 
@@ -76,7 +75,7 @@ class MyModel(tf.keras.Model):
 
 class NumLayer(tf.keras.Model):
 
-    def __init__(self,num_nodes):
+    def __init__(self):
         super(NumLayer, self).__init__()
         self.conv10 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='hard_sigmoid',kernel_initializer='he_normal')
         self.flat1 = Flatten()
@@ -94,17 +93,18 @@ class NumLayer(tf.keras.Model):
 
 class AdjLayer(tf.keras.Model):
 
-    def __init__(self,num_nodes):
+    def __init__(self):
         super(AdjLayer, self).__init__()
-        self.conv = Conv2D(num_nodes,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation=None,kernel_initializer='he_normal')
+        self.conv = Conv2D(156,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation=None,kernel_initializer='he_normal')
         self.soft = Softmax(axis=1) #row-wise softmax
 
-    def call(self, inputs, num_nodes, adj):
+    def call(self, inputs, adj):
         s = self.conv(inputs)
-        s = tf.reshape(s,[-1,num_nodes])
+        s = tf.reshape(s,[-1,156])
         s = self.soft(s)
         Sout = s
-        temp = tf.linalg.matmul(s,adj,transpose_a=True)
+        new_weird = tf.ones([43264, 43264])
+        temp = tf.linalg.matmul(s,new_weird,transpose_a=True)
         new_adj = tf.linalg.matmul(temp,s)
         return new_adj, Sout
 
@@ -121,28 +121,78 @@ class NodeLayer(tf.keras.Model):
         node_features = tf.linalg.matmul(Sout,n,transpose_a=True)
         return node_features
 
+def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_mat_pred, node_num_pred):
 
 
-#model = MyModel()
-#model.model()
+    node_loss = tf.keras.losses.mse(node_attr_lab, node_attr_pred)
+    adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
+    num_loss = tf.keras.losses.mse(node_num_lab, node_num_pred)
 
+    total = node_loss+adj_loss+num_loss
+    return node_loss,adj_loss,num_loss,total
+
+class allmodel(tf.keras.Model):
+
+    def __init__(self):
+        super(allmodel, self).__init__()
+        self.org_mod = MyModel()
+        self.num_mod = NumLayer()
+        self.adj_mod = AdjLayer()
+        self.node_mod = NodeLayer()
+    
+    def call(self,images):
+        org = self.org_mod(images)
+        num_nodes, adj = self.num_mod(org)
+        new_adj, Sout = self.adj_mod(org, adj)
+        node_features = self.node_mod(org, Sout)
+        return node_features, new_adj, num_nodes
+
+@tf.function
+def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab):
+
+    with tf.GradientTape() as tape:
+        """ org = org_model(images)
+        num_nodes, adj = num_model(org)
+        new_adj, Sout = adj_model(org, adj)
+        node_features = node_model(org, Sout) """
+        node_features, new_adj, num_nodes = model(images)
+
+        paddings_adj = tf.constant([[0, 156-node_num_lab], [0, 156-node_num_lab]])
+        adj_mat_lab = tf.pad(adj_mat_lab, paddings_adj, "CONSTANT")
+
+        paddings_node = tf.constant([[0, 156-node_num_lab], [0, 0]])
+        node_attr_lab = tf.pad(node_attr_lab, paddings_node, "CONSTANT")
+
+        node_loss, adj_loss, num_loss, total = loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_features, new_adj, num_nodes)
+        #train_loss.update_state([node_loss, adj_loss, num_loss])
+    gradients = tape.gradient(total, model.trainable_variables)
+    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    return total
 
 
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-#dataset = dataset.batch(3)
+dataset = dataset.shuffle(1000)
+#dataset = dataset.batch(1)
 
+model = allmodel()
 
+optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
+#train_loss = tf.keras.metrics.Sum()
 
-for i,j,k,l in dataset:
+EPOCHS = 2
+for epoch in range(EPOCHS):
+    for i,j,k,l in dataset:
+        l = (l-num_b)/num_a
+        l = math.ceil(l)
+        i = np.reshape(i, (1,256,256,3))
+        k = np.reshape(k, (l,l))
+        j = np.reshape(j, (l,2))
+        metric = train_step(i,j,k,l)
     
-    i = np.reshape(i, (256,256,3))
-    k = np.reshape(k, (9,9))
-    #k = np.transpose(k)
-    j = np.reshape(j, (9,2))
-    #k = np.reshape(i, (256,256,3))
-    #l = np.reshape(i, (256,256,3))
-    #print(l)
-    print(i,j,k,l)
-    #print(l)
-    break
+    template = 'Epoch {}, Loss: {}, Train Loss: {},'
+    print(template.format(epoch+1,
+                        metric))
+
+    #train_loss.reset_states()

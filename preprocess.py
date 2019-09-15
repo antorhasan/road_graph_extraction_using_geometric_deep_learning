@@ -33,7 +33,7 @@ def createDataRecord(out_filename, addrs_y):
             print(addrs_y[i])
         img_y = cv2.imread('./data/test/img/' + str(addrs_y[i]))
         img_y = img_y/255
-        img_y = np.asarray(img_y,dtype=np.float32)
+        img_y = np.asarray(img_y,dtype=np.float32) #all data has to be converted to np.float32 before writing
         
         gph = open('./data/test/sort/' + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
@@ -86,7 +86,7 @@ def create_data():
 
     trainY_list = [f for f in listdir(path) if isfile(join(path, f))]
 
-    trainY_list = trainY_list[0:3]
+    #trainY_list = trainY_list[0:3]
 
     #trainY = 
 

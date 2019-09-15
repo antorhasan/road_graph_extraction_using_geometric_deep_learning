@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 import cv2
 import scipy as sp
 import numpy as np
+import tensorflow as tf
+
+tf.enable_eager_execution()
 
 def path_sort(path):
     '''gets a path as input and returns a list of sorted filenames'''
@@ -126,6 +129,12 @@ def gphtols_view(graph):
 #view_gph('./data/test/gph/')
 
 if __name__ == "__main__":
-    view_gph('./data/test/sort/')
-    #arr = np.load('./data/numpy_arrays/num_nodes.npy')
+    #view_gph('./data/test/sort/')
+    #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))
+    t = tf.constant([[1, 2, 3], [4, 5, 6]])
+    
+    paddings = tf.constant([[0, 156-2], [0, 156-3]])
+    # 'constant_values' is 0.
+    # rank of 't' is 2.
+    print(tf.pad(t, paddings, "CONSTANT"))

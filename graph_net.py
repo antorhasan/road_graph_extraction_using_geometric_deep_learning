@@ -1,5 +1,5 @@
 import tensorflow as tf 
-from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax
+from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax, MaxPool2D
 import numpy as np
 import math
 
@@ -38,15 +38,19 @@ class MyModel(tf.keras.Model):
 
     def __init__(self):
         super(MyModel, self).__init__()
-        self.conv1 = Conv2D(5,(3,3),strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv2 = Conv2D(8,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv3 = Conv2D(12,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv4 = Conv2D(16,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv5 = Conv2D(16,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv6 = Conv2D(32,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv7 = Conv2D(32,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv8 = Conv2D(32,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv9 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv1 = Conv2D(32,(3,3),padding='same',strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv2 = Conv2D(32,(3,3),padding='same',strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.max1 = MaxPool2D((2,2))
+        self.conv3 = Conv2D(64,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv4 = Conv2D(64,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.max2 = MaxPool2D((2,2))
+        self.conv5 = Conv2D(128,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv6 = Conv2D(128,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.max3 = MaxPool2D((2,2))
+        self.conv7 = Conv2D(256,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv8 = Conv2D(256,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        
+        """ self.conv9 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv10 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv11 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv12 = Conv2D(96,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
@@ -55,18 +59,22 @@ class MyModel(tf.keras.Model):
         self.conv15 = Conv2D(128,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv16 = Conv2D(176,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv17 = Conv2D(176,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-
+ """
 
     def call(self, inputs):
         x = self.conv1(inputs)
         x = self.conv2(x)
+        x = self.max1(x)
         x = self.conv3(x)
         x = self.conv4(x)
+        x = self.max2(x)
         x = self.conv5(x)
         x = self.conv6(x)
+        x = self.max3(x)
         x = self.conv7(x)
-        x = self.conv8(x)
-        x = self.conv9(x)
+        o = self.conv8(x)
+
+        """ x = self.conv9(x)
         x = self.conv10(x)
         x = self.conv11(x)
         x = self.conv12(x)
@@ -74,7 +82,8 @@ class MyModel(tf.keras.Model):
         x = self.conv14(x)
         x = self.conv15(x)
         x = self.conv16(x)
-        o = self.conv17(x)
+        o = self.conv17(x) """
+        
         return o
 
     def compute_output_shape(self, input_shape):
@@ -89,6 +98,8 @@ class MyModel(tf.keras.Model):
         x = tf.keras.layers.Input(shape=(256,256, 3))
         return tf.keras.Model(inputs=[x], outputs=self.call(x)).summary()
 
+#model = MyModel()
+#model.model()
 
 class NumLayer(tf.keras.Model):
 
@@ -120,7 +131,7 @@ class AdjLayer(tf.keras.Model):
         s = tf.reshape(s,[-1,156])
         s = self.soft(s)
         Sout = s
-        new_weird = tf.ones([48400, 48400])
+        new_weird = tf.ones([900, 900])
         temp = tf.linalg.matmul(s,new_weird,transpose_a=True)
         new_adj = tf.linalg.matmul(temp,s)
         return new_adj, Sout

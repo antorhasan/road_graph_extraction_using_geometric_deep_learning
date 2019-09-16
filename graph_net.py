@@ -38,15 +38,24 @@ class MyModel(tf.keras.Model):
 
     def __init__(self):
         super(MyModel, self).__init__()
-        self.conv1 = Conv2D(8,(9,9),strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv2 = Conv2D(16,(9,9),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv3 = Conv2D(32,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv4 = Conv2D(64,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv5 = Conv2D(80,(7,7),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv6 = Conv2D(96,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv7 = Conv2D(128,(5,5),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv8 = Conv2D(144,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        self.conv9 = Conv2D(176,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv1 = Conv2D(5,(3,3),strides=(1,1),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv2 = Conv2D(8,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv3 = Conv2D(12,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv4 = Conv2D(16,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv5 = Conv2D(16,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv6 = Conv2D(32,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv7 = Conv2D(32,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv8 = Conv2D(32,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv9 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv10 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv11 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv12 = Conv2D(96,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv13 = Conv2D(96,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv14 = Conv2D(128,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv15 = Conv2D(128,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv16 = Conv2D(176,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv17 = Conv2D(176,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+
 
     def call(self, inputs):
         x = self.conv1(inputs)
@@ -57,7 +66,15 @@ class MyModel(tf.keras.Model):
         x = self.conv6(x)
         x = self.conv7(x)
         x = self.conv8(x)
-        o = self.conv9(x)
+        x = self.conv9(x)
+        x = self.conv10(x)
+        x = self.conv11(x)
+        x = self.conv12(x)
+        x = self.conv13(x)
+        x = self.conv14(x)
+        x = self.conv15(x)
+        x = self.conv16(x)
+        o = self.conv17(x)
         return o
 
     def compute_output_shape(self, input_shape):
@@ -103,7 +120,7 @@ class AdjLayer(tf.keras.Model):
         s = tf.reshape(s,[-1,156])
         s = self.soft(s)
         Sout = s
-        new_weird = tf.ones([43264, 43264])
+        new_weird = tf.ones([48400, 48400])
         temp = tf.linalg.matmul(s,new_weird,transpose_a=True)
         new_adj = tf.linalg.matmul(temp,s)
         return new_adj, Sout
@@ -173,8 +190,8 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab):
 
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-dataset = dataset.shuffle(1000)
-#dataset = dataset.batch(1)
+dataset = dataset.shuffle(400)
+dataset = dataset.batch(1)
 
 model = allmodel()
 

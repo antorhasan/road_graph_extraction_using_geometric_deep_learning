@@ -201,7 +201,7 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab):
 
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-dataset = dataset.shuffle(400)
+#dataset = dataset.shuffle(400)
 dataset = dataset.batch(1)
 
 model = allmodel()
@@ -214,6 +214,9 @@ for epoch in range(EPOCHS):
     for i,j,k,l in dataset:
         l = (l-num_b)/num_a
         l = math.ceil(l)
+        #l = int(l)
+        #print(k.shape[1])
+        l = int(math.sqrt(k.shape[1]))
         i = np.reshape(i, (1,256,256,3))
         k = np.reshape(k, (l,l))
         j = np.reshape(j, (l,2))

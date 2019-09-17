@@ -6,6 +6,7 @@ import cv2
 import scipy as sp
 import numpy as np
 import tensorflow as tf
+#from preprocess import mean_std, change_range
 
 tf.enable_eager_execution()
 
@@ -28,9 +29,10 @@ def path_sort(path):
 def view_gph(path):
     '''get path and view all graphs'''
     f = [f for f in listdir(path) if isfile(join(path, f))]
-    #f = f[0:7]
+    #f = f[0:2000]
     #print(f)
     arr = []
+    shob = []
     for i in f :
         print(i)
         gph = open(path + i, 'r')
@@ -40,11 +42,28 @@ def view_gph(path):
         node = make_gph(ls_node, ls_edge, range(len(ls_node)))
         if node == 0 :
             continue
-        arr.append(node)
+        #arr.append(node)
+        #print(ls_node)
+        for j in range(len(ls_node)):
+            shob.append(ls_node[j])
+            arr.append(ls_node[j][0])
     arr = np.asarray(arr)
-    #np.save('./data/numpy_arrays/num_nodes', arr)
-    #plt.hist(arr,bins=200)
-    #plt.show()
+    arr = arr+15000
+    #shob = arr
+    shob = np.asarray(shob)
+    np.save('./data/numpy_arrays/nodes_attributes', shob)
+    mean, std = mean_std(shob,'node_attr_np')
+    new_data, a, b = change_range(shob,'node_attr_np')
+    first = (shob-mean)/std
+    plt.hist(first,bins=200)
+    plt.show()
+    second = a*first + b
+    plt.hist(second,bins=200)
+    plt.show()
+    last = np.log(arr)
+    plt.hist(last,bins=200)
+    plt.show()
+
 
 class create_gph():
     '''a graph is visualized from nodes,edges and position'''
@@ -87,8 +106,8 @@ def make_gph(nodes, edges, index):
     #A = nx.adjacency_matrix(G)
     #print(A.todense())
     #print(G.nodes())
-    nx.draw(G, pos)
-    plt.show()
+    #nx.draw(G, pos)
+    #plt.show()
     return G.number_of_nodes()
 
 
@@ -130,11 +149,25 @@ def gphtols_view(graph):
 
 if __name__ == "__main__":
     #view_gph('./data/test/sort/')
+    #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))
-    t = tf.constant([[1, 2, 3], [4, 5, 6]])
+    #t = tf.constant([[1, 2, 3], [4, 5, 6]])
     
-    paddings = tf.constant([[0, 156-2], [0, 156-3]])
+    #paddings = tf.constant([[0, 156-2], [0, 156-3]])
     # 'constant_values' is 0.
     # rank of 't' is 2.
-    print(tf.pad(t, paddings, "CONSTANT"))
+    #print(tf.pad(t, paddings, "CONSTANT"))
+
+    #print(np.load('./data/numpy_arrays/first/mean.npy'))
+    #print(np.load('./data/numpy_arrays/node_attr_np/mean.npy'))
+    path = './data/superimg/'
+    path_lis = [f for f in listdir(path) if isfile(join(path, f))]
+    for i in range(len(path_lis)):
+        #print(path_lis[i])
+        img = cv2.imread(path+path_lis[i])
+        if img.shape[0]!=img.shape[1]:
+            print(path_lis[i])
+            
+        #print(img.shape)
+    pass

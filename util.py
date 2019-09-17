@@ -129,15 +129,15 @@ def mergeimg(lis):
 def crop_gph_256(nodes, edges, name):
     '''crops the graph to fit the image and also handles cropping through edge lines'''
 
-    img_path = './data/superimg/'
+    img_path = './data/data/superimg/'
     img = cv2.imread(img_path + name + '.png')
     
     x_len = float((img.shape[0])/2)
     y_len = float((img.shape[1])/2)
 
-    for i in range(int(img.shape[1]/256)):
+    for i in range(int(img.shape[0]/256)):
         
-        for j in range(int(img.shape[0]/256)):
+        for j in range(int(img.shape[1]/256)):
 
             '''boundary lines'''
             line1 = LineString([(-x_len+(j*256), y_len-(i*256)), (-x_len+((j+1)*256), y_len-(i*256))])
@@ -225,7 +225,7 @@ def crop_gph_256(nodes, edges, name):
                 b = dic_in[new_edge[k][1]]
                 ed.append(tuple([a,b]))
         
-            write_gph('./data/gph_data/'+ name +'_'+str(i)+'_'+str(j)+'.txt', new_node, ed)
+            write_gph('./data/graph/'+ name +'_'+str(i)+'_'+str(j)+'.txt', new_node, ed)
 
         print(i)
 
@@ -423,3 +423,7 @@ def gphtols_view(graph):
         #print(*ls_edge[j])
     
     return ls_node,ls_edge
+
+if __name__ == "__main__":
+    crop_gph_256
+    pass

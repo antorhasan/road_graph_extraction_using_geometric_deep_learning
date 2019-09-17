@@ -31,11 +31,11 @@ def createDataRecord(out_filename, addrs_y):
         print(i)
         if i == 0 :
             print(addrs_y[i])
-        img_y = cv2.imread('./data/test/img/' + str(addrs_y[i]))
+        img_y = cv2.imread('./data/img/' + str(addrs_y[i]))
         img_y = img_y/255
         img_y = np.asarray(img_y,dtype=np.float32) #all data has to be converted to np.float32 before writing
         
-        gph = open('./data/test/sort/' + addrs_y[i].split('.')[0] + '.txt', 'r')
+        gph = open('./data/final_gph/' + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont)
         if i == 0 :
@@ -82,7 +82,8 @@ def createDataRecord(out_filename, addrs_y):
     #print(np.amax(num_n),np.amin(num_n))
 
 def create_data():
-    path = "./data/test/img/"
+    #path = "./data/test/img/"   #test data only amsterdam
+    path = "./data/img/"        #full data
 
     trainY_list = [f for f in listdir(path) if isfile(join(path, f))]
 
@@ -90,7 +91,7 @@ def create_data():
 
     #trainY = 
 
-    createDataRecord("./data/record/train.tfrecords", trainY_list)
+    createDataRecord("./data/record/train_full.tfrecords", trainY_list)
     #createDataRecord("./data/record/val.tfrecords", val_Y)
 
 
@@ -159,13 +160,14 @@ def duplicate_removal(filename,outputfile):
     
 def dup_remove():
     #give input file path here
-    path = './data/test/gph/'
+    #path = './data/test/gph/'
+    path = './data/gph_data/'
     path_lis = [f for f in listdir(path) if isfile(join(path, f))]
     for i in range(len(path_lis)):
 
-        inputfilename = "./data/test/gph/"+path_lis[i]
+        inputfilename = "./data/gph_data/"+path_lis[i]
         outputname = inputfilename.split('/')[-1]
-        outputname = './data/test/mod/'+ outputname
+        outputname = './data/mod_gph/'+ outputname
 
         outputfile = open(outputname,'w+')
 
@@ -251,14 +253,15 @@ def sorting_latlng(inputfilename,outputfile):
 
 def sort_latlon():
     #input file to be sorted
-    path = './data/test/mod/'
+    #path = './data/test/mod/'
+    path = './data/mod_gph/'
     path_lis = [f for f in listdir(path) if isfile(join(path, f))]
     for i in range(len(path_lis)):
 
-        inputfilename = "./data/test/mod/"+path_lis[i]
+        inputfilename = "./data/mod_gph/"+path_lis[i]
     
         outputname = inputfilename.split('/')[-1]
-        outputname = './data/test/sort/'+ outputname
+        outputname = './data/final_gph/'+ outputname
         outputfile = open(outputname, 'w+')
 
 

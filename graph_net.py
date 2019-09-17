@@ -125,7 +125,7 @@ class AdjLayer(tf.keras.Model):
         super(AdjLayer, self).__init__()
         self.conv = Conv2D(156,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation=None,kernel_initializer='he_normal')
         self.soft = Softmax(axis=1) #row-wise softmax
-        #self.conv1 = Conv2D(1,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='sigmoid',kernel_initializer='he_normal')
+        self.conv1 = Conv2D(1,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='sigmoid',kernel_initializer='he_normal')
 
     def call(self, inputs, adj):
         s = self.conv(inputs)
@@ -136,10 +136,10 @@ class AdjLayer(tf.keras.Model):
         temp = tf.linalg.matmul(s,new_weird,transpose_a=True)
         new_adj = tf.linalg.matmul(temp,s) """
         new_adj = tf.linalg.matmul(s,s,transpose_a=True)
-        #new_adj = tf.reshape(new_adj,[1,156,156,1])              #trying conv + sigmoid
-        #new_adj = self.conv1(new_adj)
-        #new_adj = tf.reshape(new_adj,[156,156])
-        new_adj = tf.math.sigmoid(new_adj)               #trying only sigmoid transformation
+        new_adj = tf.reshape(new_adj,[1,156,156,1])              #trying conv + sigmoid
+        new_adj = self.conv1(new_adj)
+        new_adj = tf.reshape(new_adj,[156,156])
+        #new_adj = tf.math.sigmoid(new_adj)               #trying only sigmoid transformation
         return new_adj, Sout
 
 
@@ -153,7 +153,7 @@ class NodeLayer(tf.keras.Model):
         n = self.conv(inputs)
         n = tf.reshape(n,[-1,2])
         node_features = tf.linalg.matmul(Sout,n,transpose_a=True)
-        node_features = tf.math.tanh(node_features)    #trying to keep range same according to label
+        #node_features = tf.math.tanh(node_features)    #trying to keep range same according to label
         return node_features
 
 def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_mat_pred, node_num_pred):
@@ -216,7 +216,7 @@ model = allmodel()
 optimizer = tf.keras.optimizers.Adam(learning_rate=.001)
 #train_loss = tf.keras.metrics.Sum()
 
-EPOCHS = 2
+EPOCHS = 30
 for epoch in range(EPOCHS):
     for i,j,k,l in dataset:
         #l = (l-num_b)/num_a

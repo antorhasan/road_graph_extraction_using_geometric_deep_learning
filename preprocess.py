@@ -51,7 +51,7 @@ def createDataRecord(out_filename, addrs_y):
         #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
         graph = create_gph(ls_node, ls_edge, range(len(ls_node)))
         num_nodes = graph.get_num_nodes()
-
+        num_nodes = np.log(num_nodes)
         num_nodes = (an*num_nodes)+bn
 
         num_nodes = np.asarray(num_nodes,dtype=np.float32)

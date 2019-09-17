@@ -105,7 +105,7 @@ class NumLayer(tf.keras.Model):
 
     def __init__(self):
         super(NumLayer, self).__init__()
-        self.conv10 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='hard_sigmoid',kernel_initializer='he_normal')
+        self.conv10 = Conv2D(1,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.flat1 = Flatten()
         self.dense1 = Dense(1,bias_initializer=tf.keras.initializers.constant(.01),kernel_initializer='he_normal', activation='tanh')
 
@@ -125,15 +125,21 @@ class AdjLayer(tf.keras.Model):
         super(AdjLayer, self).__init__()
         self.conv = Conv2D(156,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation=None,kernel_initializer='he_normal')
         self.soft = Softmax(axis=1) #row-wise softmax
+        #self.conv1 = Conv2D(1,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='sigmoid',kernel_initializer='he_normal')
 
     def call(self, inputs, adj):
         s = self.conv(inputs)
         s = tf.reshape(s,[-1,156])
         s = self.soft(s)
         Sout = s
-        new_weird = tf.ones([900, 900])
+        """ new_weird = tf.ones([900, 900])
         temp = tf.linalg.matmul(s,new_weird,transpose_a=True)
-        new_adj = tf.linalg.matmul(temp,s)
+        new_adj = tf.linalg.matmul(temp,s) """
+        new_adj = tf.linalg.matmul(s,s,transpose_a=True)
+        #new_adj = tf.reshape(new_adj,[1,156,156,1])              #trying conv + sigmoid
+        #new_adj = self.conv1(new_adj)
+        #new_adj = tf.reshape(new_adj,[156,156])
+        new_adj = tf.math.sigmoid(new_adj)               #trying only sigmoid transformation
         return new_adj, Sout
 
 
@@ -141,20 +147,21 @@ class NodeLayer(tf.keras.Model):
 
     def __init__(self):
         super(NodeLayer,self).__init__()
-        self.conv = Conv2D(2,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
+        self.conv = Conv2D(2,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='tanh',kernel_initializer='he_normal')
 
     def call(self,inputs,Sout):
         n = self.conv(inputs)
         n = tf.reshape(n,[-1,2])
         node_features = tf.linalg.matmul(Sout,n,transpose_a=True)
+        node_features = tf.math.tanh(node_features)    #trying to keep range same according to label
         return node_features
 
 def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_mat_pred, node_num_pred):
 
 
-    node_loss = tf.keras.losses.mse(node_attr_lab, node_attr_pred)
+    node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
     adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
-    num_loss = tf.keras.losses.mse(node_num_lab, node_num_pred)
+    num_loss = tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
 
     total = node_loss+adj_loss+num_loss
     return node_loss,adj_loss,num_loss,total
@@ -176,7 +183,7 @@ class allmodel(tf.keras.Model):
         return node_features, new_adj, num_nodes
 
 @tf.function
-def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab):
+def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
 
     with tf.GradientTape() as tape:
         """ org = org_model(images)
@@ -185,10 +192,10 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab):
         node_features = node_model(org, Sout) """
         node_features, new_adj, num_nodes = model(images)
 
-        paddings_adj = tf.constant([[0, 156-node_num_lab], [0, 156-node_num_lab]])
+        paddings_adj = tf.constant([[0, 156-dim], [0, 156-dim]])
         adj_mat_lab = tf.pad(adj_mat_lab, paddings_adj, "CONSTANT")
 
-        paddings_node = tf.constant([[0, 156-node_num_lab], [0, 0]])
+        paddings_node = tf.constant([[0, 156-dim], [0, 0]])
         node_attr_lab = tf.pad(node_attr_lab, paddings_node, "CONSTANT")
 
         node_loss, adj_loss, num_loss, total = loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_features, new_adj, num_nodes)
@@ -196,34 +203,37 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab):
     gradients = tape.gradient(total, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    return total
-
-
+    #return total
+    return total,node_loss, adj_loss, num_loss
+    
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
 #dataset = dataset.shuffle(400)
-dataset = dataset.batch(1)
+#dataset = dataset.batch(1)
 
 model = allmodel()
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=.001)
 #train_loss = tf.keras.metrics.Sum()
 
 EPOCHS = 2
 for epoch in range(EPOCHS):
     for i,j,k,l in dataset:
-        l = (l-num_b)/num_a
-        l = math.ceil(l)
+        #l = (l-num_b)/num_a
+        #l = math.ceil(l)
         #l = int(l)
         #print(k.shape[1])
-        l = int(math.sqrt(k.shape[1]))
+        dim = int(math.sqrt(int(k.shape[0])))
         i = np.reshape(i, (1,256,256,3))
-        k = np.reshape(k, (l,l))
-        j = np.reshape(j, (l,2))
-        metric = train_step(i,j,k,l)
+        k = np.reshape(k, (dim,dim))
+        j = np.reshape(j, (dim,2))
+        #print(i,j,k,l)
+        #metric = train_step(i,j,k,l,dim)
+        metric, node_loss, adj_loss, num_loss = train_step(i,j,k,l,dim)
     
-    template = 'Epoch {}, Loss: {}, Train Loss: {},'
-    print(template.format(epoch+1,
-                        metric))
+    template = 'Epoch {}, Loss: {}, nod_Loss: {}, adj_Loss: {}, num_Loss: {}, '
+    print(template.format(epoch+1,metric, node_loss, adj_loss, num_loss))
+    #template = 'Epoch {}, Loss: {}'
+    #print(template.format(epoch+1,metric))
 
     #train_loss.reset_states()

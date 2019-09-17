@@ -163,11 +163,29 @@ if __name__ == "__main__":
     #print(np.load('./data/numpy_arrays/node_attr_np/mean.npy'))
     path = './data/superimg/'
     path_lis = [f for f in listdir(path) if isfile(join(path, f))]
+    num = 0
+    gpath = './data/gph_data/'
+    gpath_lis = [f for f in listdir(gpath) if isfile(join(gpath, f))]
+    for i in range(len(gpath_lis)):
+        gpath_lis[i] = gpath_lis[i].split('_')[0]
+    
     for i in range(len(path_lis)):
-        #print(path_lis[i])
+        print(path_lis[i])
+        name = path_lis[i].split('.')[0]
         img = cv2.imread(path+path_lis[i])
-        if img.shape[0]!=img.shape[1]:
-            print(path_lis[i])
-            
+        #if img.shape[0]!=img.shape[1]:
+        #    print(path_lis[i])
+        one = img.shape[0]/256
+        two = img.shape[1]/256
+        element = one*two
+        print(element)
+        coun = 0
+        for j in range(len(gpath_lis)):
+            if name == gpath_lis[j]:
+                coun +=1
+        print(coun)
+        #num = num+(one*two)
+        #print(num)
         #print(img.shape)
+    print(num)
     pass

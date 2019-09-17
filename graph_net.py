@@ -206,14 +206,14 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
     #return total
     return total,node_loss, adj_loss, num_loss
     
-dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
+dataset = tf.data.TFRecordDataset('./data/record/train_full.tfrecords')
 dataset = dataset.map(_parse_function)
-#dataset = dataset.shuffle(400)
+dataset = dataset.shuffle(20000)
 #dataset = dataset.batch(1)
 
 model = allmodel()
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=.001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
 #train_loss = tf.keras.metrics.Sum()
 
 EPOCHS = 30

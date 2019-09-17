@@ -38,7 +38,7 @@ def crop_to_gph(gph_path):
     '''crop graph txt according to given super img files'''
 
     f = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
-    f = f[0:2]
+    f = f[6:7]
 
     for i in f :
         gph = open(gph_path + i, 'r')

@@ -1,20 +1,7 @@
-import shapely
-from shapely.geometry import LineString, Point
+import tensorflow as tf 
 
-line = LineString([(0,0), (4,4)])
+tf.enable_eager_execution()
 
-line1 = LineString([(0,4), (4,0)])
-line2 = LineString([(2,0), (4,0)])
-line3 = LineString([(1,0), (4,0)])
-line4 = LineString([(3,0), (4,0)])
+arr = tf.constant([[[[1.,9.],[2,8],[3,7]],[[4,6],[5,5],[6,4]],[[7,3],[8,2],[9,1]]]])
 
-lis = [line2,line3,line3,line1]
-for i in range(len(lis)):
-    try:
-        int_pt = line.intersection(lis[i])
-        point_of_intersection = int_pt.x, int_pt.y
-        
-    except:
-        continue
-
-print(point_of_intersection)
+print(arr[:,0:2,0:2,:])

@@ -161,7 +161,7 @@ def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_ma
 
     node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
     adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
-    num_loss = tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
+    num_loss = 1*tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
 
     total = node_loss+adj_loss+num_loss
     return node_loss,adj_loss,num_loss,total
@@ -182,7 +182,7 @@ class allmodel(tf.keras.Model):
         node_features = self.node_mod(org, Sout)
         return node_features, new_adj, num_nodes
 
-@tf.function
+#@tf.function
 def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
 
     with tf.GradientTape() as tape:
@@ -192,11 +192,36 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
         node_features = node_model(org, Sout) """
         node_features, new_adj, num_nodes = model(images)
 
-        paddings_adj = tf.constant([[0, 156-dim], [0, 156-dim]])
-        adj_mat_lab = tf.pad(adj_mat_lab, paddings_adj, "CONSTANT")
+        pred_dim = (num_nodes-num_b)/num_a
+        pred_dim = tf.math.exp(pred_dim)
+        pred_dim = np.array(pred_dim)
+        #print(pred_dim.shape)
+        #pred_dim = pred_dim.item()
+        #pred_dim = list(pred_dim)
+        #pred_dim = pred_dim.numpy()
+        pred_dim = np.asscalar(pred_dim)
+        #pred_dim = pred_dim.tolist()
+        pred_dim = int(pred_dim)
+        
+        if pred_dim > dim :
 
-        paddings_node = tf.constant([[0, 156-dim], [0, 0]])
-        node_attr_lab = tf.pad(node_attr_lab, paddings_node, "CONSTANT")
+            paddings_adj = tf.constant([[0, pred_dim - dim], [0, pred_dim - dim]])
+            adj_mat_lab = tf.pad(adj_mat_lab, paddings_adj, "CONSTANT")
+
+            paddings_node = tf.constant([[0, pred_dim - dim], [0, 0]])
+            node_attr_lab = tf.pad(node_attr_lab, paddings_node, "CONSTANT")
+
+            new_adj = new_adj[0:pred_dim,0:pred_dim]
+            node_features = node_features[0:pred_dim,:]
+
+        elif pred_dim < dim :
+            new_adj = new_adj[0:dim,0:dim]
+            node_features = node_features[0:dim,:]
+
+        elif pred_dim == dim :
+            new_adj = new_adj[0:pred_dim,0:pred_dim]
+            node_features = node_features[0:pred_dim,:]
+
 
         node_loss, adj_loss, num_loss, total = loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_features, new_adj, num_nodes)
         #train_loss.update_state([node_loss, adj_loss, num_loss])
@@ -208,15 +233,20 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
     
 dataset = tf.data.TFRecordDataset('./data/record/train_full.tfrecords')
 dataset = dataset.map(_parse_function)
-dataset = dataset.shuffle(20000)
+dataset = dataset.shuffle(2000)
 #dataset = dataset.batch(1)
 
 model = allmodel()
-
-optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
+model.save('./data/model/')
+optimizer = tf.keras.optimizers.Adam(learning_rate=.00001)
 #train_loss = tf.keras.metrics.Sum()
 
-EPOCHS = 30
+EPOCHS = 2
+coun = 0
+run_t = 0
+run_nod = 0
+run_adj = 0
+run_num = 0
 for epoch in range(EPOCHS):
     for i,j,k,l in dataset:
         #l = (l-num_b)/num_a
@@ -230,10 +260,25 @@ for epoch in range(EPOCHS):
         #print(i,j,k,l)
         #metric = train_step(i,j,k,l,dim)
         metric, node_loss, adj_loss, num_loss = train_step(i,j,k,l,dim)
-    
-    template = 'Epoch {}, Loss: {}, nod_Loss: {}, adj_Loss: {}, num_Loss: {}, '
-    print(template.format(epoch+1,metric, node_loss, adj_loss, num_loss))
+
+        run_t = run_t + metric/2000
+        run_nod = run_nod + node_loss/2000
+        run_adj = run_adj + adj_loss/2000
+        run_num = run_num + num_loss/2000
+        if coun%2000==0 :
+            template = 'Epoch {}, Loss: {}, nod_Loss: {}, adj_Loss: {}, num_Loss: {}, '
+            #print(template.format(epoch+1,metric, node_loss, adj_loss, num_loss))
+            print(template.format(epoch+1,run_t, run_nod, run_adj, run_num))
+            run_t = 0
+            run_nod = 0
+            run_adj = 0
+            run_num = 0
+            break
+        coun+=1
+    break
+    #coun = 0
     #template = 'Epoch {}, Loss: {}'
     #print(template.format(epoch+1,metric))
 
     #train_loss.reset_states()
+#model.save('./data/model/')

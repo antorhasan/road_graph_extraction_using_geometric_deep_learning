@@ -237,7 +237,7 @@ dataset = dataset.shuffle(2000)
 #dataset = dataset.batch(1)
 
 model = allmodel()
-model.save('./data/model/')
+model.save('./data/model/',save_format='h5')
 optimizer = tf.keras.optimizers.Adam(learning_rate=.00001)
 #train_loss = tf.keras.metrics.Sum()
 

@@ -166,6 +166,14 @@ def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_ma
     total = node_loss+adj_loss+num_loss
     return node_loss,adj_loss,num_loss,total
 
+inputs = tf.keras.Input(shape=(256,256))
+org = MyModel()(inputs)
+num_nodes, adj = NumLayer()(org)
+new_adj, Sout = AdjLayer(org, adj)
+node_features = NodeLayer()(org, Sout)
+
+predictions = []
+
 class allmodel(tf.keras.Model):
 
     def __init__(self):

@@ -196,7 +196,7 @@ class allmodel(tf.keras.Model):
         num_nodes, adj = self.num_mod(org)
         new_adj, Sout = self.adj_mod(org, adj=adj)
         node_features = self.node_mod(org, Sout=Sout)
-        return tf.keras.Model(inputs=[x], outputs=[node_features, new_adj, num_nodes]).save('./data/model/first.h5')
+        return tf.keras.Model(inputs=[x], outputs=[node_features, new_adj, num_nodes])
 
 #@tf.function
 def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
@@ -254,7 +254,8 @@ dataset = dataset.shuffle(6000)
 #dataset = dataset.batch(1)
 
 model = allmodel()
-model.sav()
+#model = model.sav()
+#model.load_weights('./data/model/weight.h5')
 #model.save('./data/model/',save_format='h5')
 """ tf.keras.experimental.export_saved_model(
     model,
@@ -301,7 +302,7 @@ for epoch in range(EPOCHS):
             run_adj = 0
             run_num = 0
             break
-
+model.load_weights('./data/model/weight.h5')
 counter = 0
 for i,j,k,l in dataset:
     dim = int(math.sqrt(int(k.shape[0])))

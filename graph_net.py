@@ -154,7 +154,7 @@ def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_ma
 
 
     node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
-    adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
+    adj_loss = -0.6*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.6)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
     num_loss = 4*tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
 
     total = node_loss+adj_loss+num_loss
@@ -190,6 +190,14 @@ class allmodel(tf.keras.Model):
 
         return [shape_node, shape_adj, shape_num]
 
+    def sav(self):
+        x = tf.keras.layers.Input(shape=(256,256,3))
+        org = self.org_mod(x)
+        num_nodes, adj = self.num_mod(org)
+        new_adj, Sout = self.adj_mod(org, adj=adj)
+        node_features = self.node_mod(org, Sout=Sout)
+        return tf.keras.Model(inputs=[x], outputs=[node_features, new_adj, num_nodes]).save('./data/model/first.h5')
+
 #@tf.function
 def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
 
@@ -207,7 +215,8 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
         #pred_dim = pred_dim.item()
         #pred_dim = list(pred_dim)
         #pred_dim = pred_dim.numpy()
-        pred_dim = np.asscalar(pred_dim)
+        #pred_dim = np.asscalar(pred_dim)
+        pred_dim = pred_dim.item()
         #pred_dim = pred_dim.tolist()
         pred_dim = int(pred_dim)
         
@@ -245,6 +254,7 @@ dataset = dataset.shuffle(6000)
 #dataset = dataset.batch(1)
 
 model = allmodel()
+model.sav()
 #model.save('./data/model/',save_format='h5')
 """ tf.keras.experimental.export_saved_model(
     model,
@@ -301,15 +311,17 @@ for i,j,k,l in dataset:
     pred_dim = (num_nodes-num_b)/num_a
     pred_dim = tf.math.exp(pred_dim)
     pred_dim = np.array(pred_dim)
-    pred_dim = np.asscalar(pred_dim)
+    pred_dim = pred_dim.item()
     pred_dim = int(pred_dim)
 
     new_adj = new_adj[0:pred_dim,0:pred_dim]
     node_features = node_features[0:pred_dim,:]
+    node_features = (((node_features - node_b)/node_a)*node_std)+node_mean
+    new_adj = np.where(new_adj>.5, 1.0 , 0)
     np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
     np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)
     image = i*255.0
-    image = np.reshape(i,(256,256,3))
+    image = np.reshape(image,(256,256,3))
     image = np.asarray(image, dtype=np.uint8)
 
     cv2.imwrite('./data/output/img'+str(counter)+'.png',image)

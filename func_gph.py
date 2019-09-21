@@ -35,7 +35,7 @@ def _parse_function(example_proto):
     dim = tf.dtypes.cast(dim, dtype=tf.int32)
     #pr = tf.print(dim)
     print(dim)
-    dim_adj = tf.fill([1,2], dim)
+    dim_adj = tf.fill([1,2], dim[0])
     image_y = tf.reshape(image_y, [256,256,3])
     gph_adj = tf.reshape(gph_adj, dim_adj)
     gph_nodes = tf.reshape(gph_nodes, [dim[0],2])

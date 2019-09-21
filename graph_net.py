@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax, MaxPool2D
 import numpy as np
 import math
+import cv2
 
 tf.enable_eager_execution()
 
@@ -86,13 +87,6 @@ class MyModel(tf.keras.layers.Layer):
         
         return o
 
-    def compute_output_shape(self, input_shape):
-        # You need to override this function if you want to use the subclassed model
-        # as part of a functional-style model.
-        # Otherwise, this method is optional.
-        shape = tf.TensorShape(input_shape).as_list()
-        shape[-1] = self.num_classes
-        return tf.TensorShape(shape)
 
     def model(self):
         x = tf.keras.layers.Input(shape=(256,256, 3))
@@ -174,6 +168,9 @@ class allmodel(tf.keras.Model):
         self.num_mod = NumLayer()
         self.adj_mod = AdjLayer()
         self.node_mod = NodeLayer()
+        self.shape_node = tf.TensorShape([156, 2])
+        self.shape_adj = tf.TensorShape([156, 156])
+        self.shape_num = tf.TensorShape([1,])
     
     def call(self,images):
         org = self.org_mod(images)
@@ -181,6 +178,17 @@ class allmodel(tf.keras.Model):
         new_adj, Sout = self.adj_mod(org, adj)
         node_features = self.node_mod(org, Sout)
         return node_features, new_adj, num_nodes
+
+    def compute_output_shape(self, input_shape):
+        # You need to override this function if you want to use the subclassed model
+        # as part of a functional-style model.
+        # Otherwise, this method is optional.
+        #shape = tf.TensorShape(input_shape).as_list()
+        shape_node = self.shape_node
+        shape_adj = self.shape_adj
+        shape_num = self.shape_num
+
+        return [shape_node, shape_adj, shape_num]
 
 #@tf.function
 def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
@@ -233,15 +241,23 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
     
 dataset = tf.data.TFRecordDataset('./data/record/train_full.tfrecords')
 dataset = dataset.map(_parse_function)
-#dataset = dataset.shuffle(10000)
+dataset = dataset.shuffle(6000)
 #dataset = dataset.batch(1)
 
 model = allmodel()
-model.save('./data/model/',save_format='h5')
-optimizer = tf.keras.optimizers.Adam(learning_rate=.00001)
+#model.save('./data/model/',save_format='h5')
+""" tf.keras.experimental.export_saved_model(
+    model,
+    './data/model/',
+    custom_objects=None,
+    as_text=False,
+    input_signature=None,
+    serving_only=True
+) """
+optimizer = tf.keras.optimizers.Adam(learning_rate=.000001)
 #train_loss = tf.keras.metrics.Sum()
 
-EPOCHS = 6
+EPOCHS = 2
 coun = 0
 run_t = 0
 run_nod = 0
@@ -274,12 +290,30 @@ for epoch in range(EPOCHS):
             run_nod = 0
             run_adj = 0
             run_num = 0
-        break
-        
-    #break
-    #coun = 0
-    #template = 'Epoch {}, Loss: {}'
-    #print(template.format(epoch+1,metric))
+            break
 
-    #train_loss.reset_states()
-#model.save('./data/model/')
+counter = 0
+for i,j,k,l in dataset:
+    dim = int(math.sqrt(int(k.shape[0])))
+    i = np.reshape(i, (1,256,256,3))
+    node_features, new_adj, num_nodes = model(i)
+
+    pred_dim = (num_nodes-num_b)/num_a
+    pred_dim = tf.math.exp(pred_dim)
+    pred_dim = np.array(pred_dim)
+    pred_dim = np.asscalar(pred_dim)
+    pred_dim = int(pred_dim)
+
+    new_adj = new_adj[0:pred_dim,0:pred_dim]
+    node_features = node_features[0:pred_dim,:]
+    np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
+    np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)
+    image = i*255.0
+    image = np.reshape(i,(256,256,3))
+    image = np.asarray(image, dtype=np.uint8)
+
+    cv2.imwrite('./data/output/img'+str(counter)+'.png',image)
+    counter+=1
+    if counter==6:
+        break
+    

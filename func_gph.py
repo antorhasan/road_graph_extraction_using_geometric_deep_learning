@@ -30,7 +30,17 @@ def _parse_function(example_proto):
     gph_adj = tf.decode_raw(parsed_features["gph_adj"],  tf.float32)
     gph_node_num = tf.decode_raw(parsed_features["gph_node_num"],  tf.float32)
     
-    return image_y, gph_nodes, gph_adj, gph_node_num
+    dim = tf.dtypes.cast(tf.shape(gph_adj), dtype=tf.float32) 
+    dim = tf.math.sqrt(dim)
+    dim = tf.dtypes.cast(dim, dtype=tf.int32)
+    #pr = tf.print(dim)
+    print(dim)
+    dim_adj = tf.fill([1,2], dim)
+    image_y = tf.reshape(image_y, [256,256,3])
+    gph_adj = tf.reshape(gph_adj, dim_adj)
+    gph_nodes = tf.reshape(gph_nodes, [dim[0],2])
+
+    return image_y, [gph_nodes, gph_adj, gph_node_num]
 
 
 
@@ -156,61 +166,14 @@ class NodeLayer(tf.keras.layers.Layer):
         #node_features = tf.math.tanh(node_features)    #trying to keep range same according to label
         return node_features
 
-def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_mat_pred, node_num_pred):
+def f_loss():
+    def cost(labels, logits):
 
-
-    node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
-    adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
-    num_loss = 4*tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
-
-    total = node_loss+adj_loss+num_loss
-    return node_loss,adj_loss,num_loss,total
-
-inputs = tf.keras.Input(shape=(256,256))
-org = MyModel()(inputs)
-num_nodes, adj = NumLayer()(org)
-new_adj, Sout = AdjLayer(org, adj)
-node_features = NodeLayer()(org, Sout)
-
-predictions = []
-
-class allmodel(tf.keras.Model):
-
-    def __init__(self):
-        super(allmodel, self).__init__()
-        self.org_mod = MyModel()
-        self.num_mod = NumLayer()
-        self.adj_mod = AdjLayer()
-        self.node_mod = NodeLayer()
-    
-    def call(self,images):
-        org = self.org_mod(images)
-        num_nodes, adj = self.num_mod(org)
-        new_adj, Sout = self.adj_mod(org, adj)
-        node_features = self.node_mod(org, Sout)
-        return node_features, new_adj, num_nodes
-
-#@tf.function
-def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
-
-    with tf.GradientTape() as tape:
-        """ org = org_model(images)
-        num_nodes, adj = num_model(org)
-        new_adj, Sout = adj_model(org, adj)
-        node_features = node_model(org, Sout) """
-        node_features, new_adj, num_nodes = model(images)
-
-        pred_dim = (num_nodes-num_b)/num_a
+        """ pred_dim = (logits[2]-num_b)/num_a
         pred_dim = tf.math.exp(pred_dim)
-        pred_dim = np.array(pred_dim)
-        #print(pred_dim.shape)
-        #pred_dim = pred_dim.item()
-        #pred_dim = list(pred_dim)
-        #pred_dim = pred_dim.numpy()
-        pred_dim = np.asscalar(pred_dim)
-        #pred_dim = pred_dim.tolist()
-        pred_dim = int(pred_dim)
-        
+
+        #dim = labels[]
+
         if pred_dim > dim :
 
             paddings_adj = tf.constant([[0, pred_dim - dim], [0, pred_dim - dim]])
@@ -222,72 +185,52 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
             new_adj = new_adj[0:pred_dim,0:pred_dim]
             node_features = node_features[0:pred_dim,:]
 
+        
+
         elif pred_dim < dim :
             new_adj = new_adj[0:dim,0:dim]
             node_features = node_features[0:dim,:]
 
         elif pred_dim == dim :
             new_adj = new_adj[0:pred_dim,0:pred_dim]
-            node_features = node_features[0:pred_dim,:]
+            node_features = node_features[0:pred_dim,:] """
 
 
-        node_loss, adj_loss, num_loss, total = loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_features, new_adj, num_nodes)
-        #train_loss.update_state([node_loss, adj_loss, num_loss])
-    gradients = tape.gradient(total, model.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        node_loss = tf.reduce_mean(tf.keras.losses.mse(labels[0], logits[0]))
+        adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(labels[1],tf.math.log(logits[1])))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-labels[1]),tf.math.log(1-logits[1])))
+        num_loss = 4*tf.reduce_mean(tf.keras.losses.mse(labels[2], logits[2]))
 
-    #return total
-    return total,node_loss, adj_loss, num_loss
-    
+        total = node_loss+adj_loss+num_loss
+
+        return total
+    return cost
+
+""" def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_mat_pred, node_num_pred):
+
+    node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
+    adj_loss = -0.65*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.65)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
+    num_loss = 4*tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
+
+    total = node_loss+adj_loss+num_loss
+    return node_loss,adj_loss,num_loss,total """
+
 dataset = tf.data.TFRecordDataset('./data/record/train_full.tfrecords')
 dataset = dataset.map(_parse_function)
 #dataset = dataset.shuffle(10000)
-#dataset = dataset.batch(1)
+dataset = dataset.batch(1)
 
-model = allmodel()
-model.save('./data/model/',save_format='h5')
-optimizer = tf.keras.optimizers.Adam(learning_rate=.00001)
-#train_loss = tf.keras.metrics.Sum()
+inputs = tf.keras.Input(shape=(256,256,3))
 
-EPOCHS = 6
-coun = 0
-run_t = 0
-run_nod = 0
-run_adj = 0
-run_num = 0
-for epoch in range(EPOCHS):
-    for i,j,k,l in dataset:
-        #l = (l-num_b)/num_a
-        #l = math.ceil(l)
-        #l = int(l)
-        #print(k.shape[1])
-        dim = int(math.sqrt(int(k.shape[0])))
-        i = np.reshape(i, (1,256,256,3))
-        k = np.reshape(k, (dim,dim))
-        j = np.reshape(j, (dim,2))
-        #print(i,j,k,l)
-        #metric = train_step(i,j,k,l,dim)
-        metric, node_loss, adj_loss, num_loss = train_step(i,j,k,l,dim)
+org = MyModel()(inputs)
+num_nodes, adj = NumLayer()(org)
+new_adj, Sout = AdjLayer()(org, adj)
+node_features = NodeLayer()(org, Sout)
 
-        run_t = run_t + metric/2000
-        run_nod = run_nod + node_loss/2000
-        run_adj = run_adj + adj_loss/2000
-        run_num = run_num + num_loss/2000
-        coun+=1
-        if coun%2000==0 :
-            template = 'Epoch {}, Loss: {}, nod_Loss: {}, adj_Loss: {}, num_Loss: {}, '
-            #print(template.format(epoch+1,metric, node_loss, adj_loss, num_loss))
-            print(template.format(epoch+1,run_t, run_nod, run_adj, run_num))
-            run_t = 0
-            run_nod = 0
-            run_adj = 0
-            run_num = 0
-        break
-        
-    #break
-    #coun = 0
-    #template = 'Epoch {}, Loss: {}'
-    #print(template.format(epoch+1,metric))
+predictions = [node_features, new_adj, num_nodes]
 
-    #train_loss.reset_states()
-#model.save('./data/model/')
+model = tf.keras.Model(inputs=inputs, outputs=predictions)
+
+model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=.00001),
+              loss=f_loss())
+
+model.fit(dataset , batch_size=1, epochs=2)

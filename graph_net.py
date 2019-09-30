@@ -50,7 +50,9 @@ class MyModel(tf.keras.layers.Layer):
         self.max3 = MaxPool2D((2,2))
         self.conv7 = Conv2D(256,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv8 = Conv2D(256,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
-        
+        self.max4 = MaxPool2D((2,2))
+
+
         """ self.conv9 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv10 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
         self.conv11 = Conv2D(64,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation='relu',kernel_initializer='he_normal')
@@ -73,7 +75,8 @@ class MyModel(tf.keras.layers.Layer):
         x = self.conv6(x)
         x = self.max3(x)
         x = self.conv7(x)
-        o = self.conv8(x)
+        x = self.conv8(x)
+        o = self.max4(x)
 
         """ x = self.conv9(x)
         x = self.conv10(x)
@@ -94,6 +97,7 @@ class MyModel(tf.keras.layers.Layer):
 
 #model = MyModel()
 #model.model()
+
 
 class NumLayer(tf.keras.layers.Layer):
 
@@ -119,19 +123,22 @@ class AdjLayer(tf.keras.layers.Layer):
         super(AdjLayer, self).__init__()
         self.conv = Conv2D(156,(3,3),bias_initializer=tf.keras.initializers.constant(.01),activation=None,kernel_initializer='he_normal')
         self.soft = Softmax(axis=1) #row-wise softmax
-        self.conv1 = Conv2D(1,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='sigmoid',kernel_initializer='he_normal')
+        #self.conv1 = Conv2D(1,(3,3),padding='same',bias_initializer=tf.keras.initializers.constant(.01),activation='sigmoid',kernel_initializer='he_normal')
 
     def call(self, inputs, adj):
         s = self.conv(inputs)
         s = tf.reshape(s,[-1,156])
         s = self.soft(s)
         Sout = s
-        """ new_weird = tf.ones([900, 900])
-        temp = tf.linalg.matmul(s,new_weird,transpose_a=True)
-        new_adj = tf.linalg.matmul(temp,s) """
-        new_adj = tf.linalg.matmul(s,s,transpose_a=True)
+
+        #new_weird = tf.ones([900, 900])
+        adj = tf.reshape(adj, [196,196])
+        temp = tf.linalg.matmul(s,adj,transpose_a=True)
+        new_adj = tf.linalg.matmul(temp,s)
+        
+        #new_adj = tf.linalg.matmul(s,s,transpose_a=True)
         new_adj = tf.reshape(new_adj,[1,156,156,1])              #trying conv + sigmoid
-        new_adj = self.conv1(new_adj)
+        #new_adj = self.conv1(new_adj)
         new_adj = tf.reshape(new_adj,[156,156])
         #new_adj = tf.math.sigmoid(new_adj)               #trying only sigmoid transformation
         return new_adj, Sout
@@ -151,7 +158,6 @@ class NodeLayer(tf.keras.layers.Layer):
         return node_features
 
 def loss_object(node_attr_lab, adj_mat_lab, node_num_lab, node_attr_pred, adj_mat_pred, node_num_pred):
-
 
     node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
     adj_loss = -0.6*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.6)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
@@ -248,7 +254,7 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
     #return total
     return total,node_loss, adj_loss, num_loss
     
-dataset = tf.data.TFRecordDataset('./data/record/train_full.tfrecords')
+dataset = tf.data.TFRecordDataset('./data/record/train_25.tfrecords')
 dataset = dataset.map(_parse_function)
 dataset = dataset.shuffle(6000)
 #dataset = dataset.batch(1)
@@ -265,7 +271,7 @@ model = allmodel()
     input_signature=None,
     serving_only=True
 ) """
-optimizer = tf.keras.optimizers.Adam(learning_rate=.000001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=.00001)
 #train_loss = tf.keras.metrics.Sum()
 
 EPOCHS = 2
@@ -301,8 +307,15 @@ for epoch in range(EPOCHS):
             run_nod = 0
             run_adj = 0
             run_num = 0
-            break
-model.load_weights('./data/model/weight.h5')
+            #break
+#model.load_weights('./data/model/weight.h5')
+#model.save_weights('./data/model/weight.h5')
+
+
+dataset_test = tf.data.TFRecordDataset('./data/record/train_15.tfrecords')
+dataset_test = dataset_test.map(_parse_function)
+dataset_test = dataset_test.shuffle(6000)
+
 counter = 0
 for i,j,k,l in dataset:
     dim = int(math.sqrt(int(k.shape[0])))

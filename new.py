@@ -8,7 +8,84 @@ import numpy as np
 import tensorflow as tf
 #from preprocess import mean_std, change_range
 
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
+
+def Neighbors(i, row, col):
+    top = i-col
+    bottom = i+col
+    left = i-1
+    right = i+1
+    tl = top-1 #top left
+    tr = top+1 #top right
+    bl = bottom-1 #bottom left
+    br = bottom+1 #bottom right
+
+    if top < 0:
+        top = -1
+    if bottom > (row*col - 1):
+        bottom = -1
+    if left%col == (col-1):
+        left = -1
+    if right%col == 0:
+        right = -1
+    
+    if top==-1 or left==-1:
+        tl = -1
+    if top==-1 or right==-1:
+        tr = -1
+    if bottom==-1 or left==-1:
+        bl = -1
+    if bottom==-1 or right==-1:
+        br = -1
+
+    temp = [tl,top,tr,left,i,right,bl,bottom,br]
+    return temp
+
+def lagbe():
+    nplines = np.loadtxt("Input2.txt")
+    row = len(nplines)
+    col = len(nplines[0])
+
+    outputfile = open("Output2.txt",'w+')
+    npoutput = np.zeros(shape=(row*col, row*col))
+
+    for i in range(row):
+        for j in range(col):
+            if nplines[i][j] == 0:
+                iprime = i*col + j 
+                for k in range(row*col):
+                    npoutput[iprime][k] = 0
+            elif nplines[i][j] == 1:
+                currpos = i*col + j
+                temp = Neighbors(currpos, row, col)
+                res = []
+                for k in temp:
+                    if k!=-1:
+                        tempr = int(k/col) 
+                        tempc = k%col 
+                        
+                        if nplines[tempr][tempc] == 1:
+                            res.append(k)
+                            #print(k)
+                iprime = i*col + j 
+                for k in range(row*col):
+                    npoutput[iprime][k] = 0
+                    if k in res:
+                        npoutput[iprime][k] = 1
+
+
+    for i in range(len(npoutput)):
+        s = ""
+        for j in range(len(npoutput[0])):
+            if npoutput[i][j] == 0:
+                s += "0 "
+            elif npoutput[i][j] == 1:
+                s += "1 "
+
+        outputfile.write(s)
+        outputfile.write('\n')
+
+    outputfile.close()
 
 def path_sort(path):
     '''gets a path as input and returns a list of sorted filenames'''
@@ -147,20 +224,7 @@ def gphtols_view(graph):
 #print(np.load('./data/numpy_arrays/num_nodes.npy'))
 #view_gph('./data/test/gph/')
 
-if __name__ == "__main__":
-    #view_gph('./data/test/sort/')
-    #view_gph('./data/gph_data/')
-    #rr = np.load('./data/numpy_arrays/num_nodes.npy')
-    #print(np.amax(arr))
-    #t = tf.constant([[1, 2, 3], [4, 5, 6]])
-    
-    #paddings = tf.constant([[0, 156-2], [0, 156-3]])
-    # 'constant_values' is 0.
-    # rank of 't' is 2.
-    #print(tf.pad(t, paddings, "CONSTANT"))
-
-    #print(np.load('./data/numpy_arrays/first/mean.npy'))
-    #print(np.load('./data/numpy_arrays/node_attr_np/mean.npy'))
+def unknown():
     path = './data/superimg/'
     path_lis = [f for f in listdir(path) if isfile(join(path, f))]
     num = 0
@@ -188,4 +252,21 @@ if __name__ == "__main__":
         #print(num)
         #print(img.shape)
     print(num)
+
+
+
+if __name__ == "__main__":
+    #view_gph('./data/final_gph/')
+    #view_gph('./data/gph_data/')
+    #rr = np.load('./data/numpy_arrays/num_nodes.npy')
+    #print(np.amax(arr))
+    #t = tf.constant([[1, 2, 3], [4, 5, 6]])
+    
+    #paddings = tf.constant([[0, 156-2], [0, 156-3]])
+    # 'constant_values' is 0.
+    # rank of 't' is 2.
+    #print(tf.pad(t, paddings, "CONSTANT"))
+
+    #print(np.load('./data/numpy_arrays/first/mean.npy'))
+    #print(np.load('./data/numpy_arrays/node_attr_np/mean.npy'))
     pass

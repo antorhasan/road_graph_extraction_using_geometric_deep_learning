@@ -87,11 +87,12 @@ def create_data():
 
     trainY_list = [f for f in listdir(path) if isfile(join(path, f))]
 
-    #trainY_list = trainY_list[0:3]
+    #trainY_list = trainY_list[0:61440]
+    trainY_list = trainY_list[61440:76800]
 
     #trainY = 
 
-    createDataRecord("./data/record/train_full.tfrecords", trainY_list)
+    createDataRecord("./data/record/train_15.tfrecords", trainY_list)
     #createDataRecord("./data/record/val.tfrecords", val_Y)
 
 

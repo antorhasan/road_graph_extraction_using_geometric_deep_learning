@@ -41,7 +41,7 @@ def Neighbors(i, row, col):
     temp = [tl,top,tr,left,i,right,bl,bottom,br]
     return temp
 
-def lagbe():
+def lagbe_fix_adj():
     nplines = np.loadtxt("Input2.txt")
     row = len(nplines)
     col = len(nplines[0])
@@ -298,7 +298,7 @@ def unknown():
 
 if __name__ == "__main__":
     view_graph('./data/temp/')
-    view_graph('./data/was/')
+    #view_graph('./data/was/')
     #view_gph('./data/final_gph/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')

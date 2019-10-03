@@ -319,8 +319,40 @@ def num_array():
     plt.hist(arr, bins=200)
     plt.show()
 
+def fix_nodes():
+    '''change node feature so that they are attributed based on the 
+    center of each of the image crops instead of being attributed based
+    on the center point of the superimage
+    '''
+    path = "./data/superimg/"
+    path_list = [f for f in listdir(path) if isfile(join(path, f))]
+    path_list = [0:1]
+
+    gph_path = './data/final_gph/'
+    gph_list = [f for f in listdir(path) if isfile(join(path, f))]
+    gph_list = [0:10]
+
+    for i in range(len(path_list)):
+        name = path_list[i].split('.')[0]
+
+        img = cv2.imread(path + path_list[i],0)
+        height = img.shape[0]
+        width = img.shape[1]
+
+        row_times = height/256
+        column_times = width/256
+
+        first_center = [-(width/2)+128, (height/2)-128)]
+        for j in range(row_times):
+            for k in range(column_times):
+                
+                
+                nodes, edges = gphtols_view()
+
+
+
 if __name__ == "__main__":
     #dup_remove()
     #sort_latlon()
     #num_array()
-    create_data()
+    #create_data()

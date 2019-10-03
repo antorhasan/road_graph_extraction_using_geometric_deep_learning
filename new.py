@@ -103,6 +103,29 @@ def path_sort(path):
     return img_lis
 #path_sort('./data/gph_data/')
 
+class view_graph():
+    '''plot graph
+    '''
+    def __init__(self,path):
+
+        
+        '''plot graph from a text file
+        argument : path to the text files
+        output : matplotlib plot of the graphs in the folder
+        '''
+        f = [f for f in listdir(path) if isfile(join(path, f))]
+        f = f[0:3]
+        #print(f)
+        arr = []
+        shob = []
+        for i in f :
+            print(i)
+            gph = open(path + i, 'r')
+            cont = gph.readlines()
+            ls_node, ls_edge = gphtols_view(cont)
+            make_graph(ls_node, ls_edge, range(len(ls_node)))
+
+    
 def view_gph(path):
     '''get path and view all graphs'''
     f = [f for f in listdir(path) if isfile(join(path, f))]
@@ -145,7 +168,7 @@ def view_gph(path):
 class create_gph():
     '''a graph is visualized from nodes,edges and position'''
     
-    def __init__(self, nodes,edges,index):
+    def __init__(self, nodes, edges, index):
         G = nx.Graph()
         counter = 0
         for i in index:
@@ -164,6 +187,24 @@ class create_gph():
         '''returns the adjacency matrix of the graph'''
         A = nx.adjacency_matrix(self.graph)
         return A.todense()
+
+class make_graph():
+
+    def __init__(self, nodes, edges, index):
+        '''create graph objects from nodes,edges and index list
+        and plot the graph'''
+        G = nx.Graph()
+        counter = 0
+        for i in index:
+            G.add_node(i,coor=nodes[counter])
+            counter += 1
+
+        for i in range(len(edges)):
+            G.add_edge(*edges[i])
+
+        pos = dict(zip(index, nodes))
+        nx.draw(G, pos)
+        plt.show()
 
     
 def make_gph(nodes, edges, index):
@@ -256,6 +297,8 @@ def unknown():
 
 
 if __name__ == "__main__":
+    #view_graph('./data/final_gph/')
+    
     #view_gph('./data/final_gph/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')

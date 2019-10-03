@@ -425,5 +425,5 @@ def gphtols_view(graph):
     return ls_node,ls_edge
 
 if __name__ == "__main__":
-    crop_gph_256
+    #crop_gph_256
     pass

@@ -108,13 +108,13 @@ class view_graph():
     '''
     def __init__(self,path):
 
-        
+
         '''plot graph from a text file
         argument : path to the text files
         output : matplotlib plot of the graphs in the folder
         '''
         f = [f for f in listdir(path) if isfile(join(path, f))]
-        f = f[0:3]
+        #f = f[0:3]
         #print(f)
         arr = []
         shob = []
@@ -297,8 +297,8 @@ def unknown():
 
 
 if __name__ == "__main__":
-    #view_graph('./data/final_gph/')
-    
+    view_graph('./data/temp/')
+    view_graph('./data/was/')
     #view_gph('./data/final_gph/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')

@@ -7,7 +7,7 @@ from os import listdir
 from os.path import isfile, join
 from new import *
 import matplotlib.pyplot as plt
-
+from util import write_gph
 
 
 def _bytes_feature(value):
@@ -326,15 +326,15 @@ def fix_nodes():
     '''
     path = "./data/superimg/"
     path_list = [f for f in listdir(path) if isfile(join(path, f))]
-    path_list = [0:1]
+    path_list = path_list[0:1]
 
     gph_path = './data/final_gph/'
-    gph_list = [f for f in listdir(path) if isfile(join(path, f))]
-    gph_list = [0:10]
+    #gph_list = [f for f in listdir(path) if isfile(join(path, f))]
+    #gph_list = gph_list[0:10]
 
     for i in range(len(path_list)):
         name = path_list[i].split('.')[0]
-
+        print(name)
         img = cv2.imread(path + path_list[i],0)
         height = img.shape[0]
         width = img.shape[1]
@@ -342,16 +342,48 @@ def fix_nodes():
         row_times = height/256
         column_times = width/256
 
-        first_center = [-(width/2)+128, (height/2)-128)]
-        for j in range(row_times):
-            for k in range(column_times):
+        first_center = [-(width/2)+128, (height/2)-128]
+        for j in range(int(row_times)):
+            for k in range(int(column_times)):
+                gph_name = name + '_' + str(j) + '_' + str(k) + '.txt'
+                print(gph_name)
+                gph = open(gph_path + gph_name, 'r')
+                cont = gph.readlines()
+                nodes, edges = gphtols_view(cont)
+                #print(nodes)
+                center = [first_center[0]+(256*k),first_center[1]-(256*j)]
+                #print(center)
+
+                for l in range(len(nodes)):
+                    x_abs = abs(nodes[l][0] - center[0])
+                    y_abs = abs(nodes[l][1] - center[1])
+
+                    if nodes[l][0] > center[0] :
+                        x = x_abs
+                    else :
+                        x = - x_abs
+                    if nodes[l][1] > center[1]:
+                        y = y_abs
+                    else :
+                        y = - y_abs
+                    if nodes[l][0] == center[0]:
+                        x = 0.0
+                    if nodes[l][1] == center[1]:
+                        y = 0.0
+                    
+                    nodes[l] = [x,y]
+                
+                write_gph('./data/nodes_fixed/'+gph_name,nodes,edges)
                 
                 
-                nodes, edges = gphtols_view()
+            
+        break
+
 
 
 
 if __name__ == "__main__":
+    fix_nodes()
     #dup_remove()
     #sort_latlon()
     #num_array()

@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
-from new import *
+#from new import *
 import matplotlib.pyplot as plt
 from util import write_gph
 
@@ -326,7 +326,7 @@ def fix_nodes():
     '''
     path = "./data/superimg/"
     path_list = [f for f in listdir(path) if isfile(join(path, f))]
-    path_list = path_list[0:1]
+    #path_list = path_list[0:1]
 
     gph_path = './data/final_gph/'
     #gph_list = [f for f in listdir(path) if isfile(join(path, f))]
@@ -376,11 +376,7 @@ def fix_nodes():
                 write_gph('./data/nodes_fixed/'+gph_name,nodes,edges)
                 
                 
-            
-        break
-
-
-
+    
 
 if __name__ == "__main__":
     fix_nodes()

@@ -6,7 +6,7 @@ import cv2
 import scipy as sp
 import numpy as np
 import tensorflow as tf
-#from preprocess import mean_std, change_range
+from preprocess import mean_std, change_range
 
 #tf.enable_eager_execution()
 
@@ -134,28 +134,33 @@ def view_gph(path):
     arr = []
     shob = []
     for i in f :
-        print(i)
+        #print(i)
         gph = open(path + i, 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont)
+        if np.asarray(ls_node).any() > 256 or np.asarray(ls_node).any() < -256 :
+            print(i)
         #ls_node, ls_edge = gphtols(cont)
-        node = make_gph(ls_node, ls_edge, range(len(ls_node)))
+        #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
+        graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
+        node = graph.get_number_nodes()
         if node == 0 :
             continue
+
         #arr.append(node)
         #print(ls_node)
         for j in range(len(ls_node)):
             shob.append(ls_node[j])
             arr.append(ls_node[j][0])
     arr = np.asarray(arr)
-    arr = arr+15000
+    #arr = arr+15000
     #shob = arr
     shob = np.asarray(shob)
-    np.save('./data/numpy_arrays/nodes_attributes', shob)
-    mean, std = mean_std(shob,'node_attr_np')
-    new_data, a, b = change_range(shob,'node_attr_np')
+    np.save('./data/numpy_arrays/fixed_node.npy', shob)
+    mean, std = mean_std(shob,'fixed_node')
+    new_data, a, b = change_range(shob,'fixed_node')
     first = (shob-mean)/std
-    plt.hist(first,bins=200)
+    plt.hist(arr,bins=200)
     plt.show()
     second = a*first + b
     plt.hist(second,bins=200)
@@ -203,8 +208,15 @@ class make_graph():
             G.add_edge(*edges[i])
 
         pos = dict(zip(index, nodes))
-        nx.draw(G, pos)
+        self.positions = pos
+        self.graph = G
+    
+    def show_graph(self):
+        nx.draw(self.graph, self.positions)
         plt.show()
+    
+    def get_number_nodes(self):
+        return self.graph.number_of_nodes()
 
     
 def make_gph(nodes, edges, index):
@@ -297,9 +309,9 @@ def unknown():
 
 
 if __name__ == "__main__":
-    view_graph('./data/temp/')
+    #view_graph('./data/temp/')
     #view_graph('./data/was/')
-    #view_gph('./data/final_gph/')
+    view_gph('./data/nodes_fixed/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))

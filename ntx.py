@@ -1,7 +1,7 @@
-import tensorflow as tf 
+import cv2 
 
-tf.enable_eager_execution()
+img = cv2.imread('./data/img/minneapolis_1_0.png',1)
 
-arr = tf.constant([[[[1.,9.],[2,8],[3,7]],[[4,6],[5,5],[6,4]],[[7,3],[8,2],[9,1]]]])
-
-print(arr[:,0:2,0:2,:])
+cv2.imshow('img',img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()

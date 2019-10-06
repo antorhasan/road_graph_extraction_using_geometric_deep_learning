@@ -5,9 +5,9 @@ import numpy as np
 import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
-#from new import *
+from gph_crop import *
 import matplotlib.pyplot as plt
-from util import write_gph
+from util import write_gph, gphtols_view
 
 
 def _bytes_feature(value):
@@ -159,16 +159,19 @@ def duplicate_removal(filename,outputfile):
     for l in edges:
         outputfile.write(l + "\n")
     
-def dup_remove():
-    #give input file path here
-    #path = './data/test/gph/'
-    path = './data/gph_data/'
+def dup_remove(input_dir, output_dir):
+    '''remove duplicate node values and fix edge list accordingly
+    Args :
+        - input_dir : input directory of graphs to be fixed
+        - output_dir : output directory where the graphs will be written
+    '''
+    path = input_dir
     path_lis = [f for f in listdir(path) if isfile(join(path, f))]
     for i in range(len(path_lis)):
 
-        inputfilename = "./data/gph_data/"+path_lis[i]
+        inputfilename = input_dir +path_lis[i]
         outputname = inputfilename.split('/')[-1]
-        outputname = './data/mod_gph/'+ outputname
+        outputname = output_dir + outputname
 
         outputfile = open(outputname,'w+')
 
@@ -252,17 +255,20 @@ def sorting_latlng(inputfilename,outputfile):
         s = str(l[0]) + " " + str(l[1]) + "\n"
         outputfile.write(s)
 
-def sort_latlon():
-    #input file to be sorted
-    #path = './data/test/mod/'
-    path = './data/mod_gph/'
+def sort_latlon(input_dir,output_dir):
+    '''sort node values from upper left corner and fix edge list accordingly
+    Args :
+        - input_dir : input directory of graphs to be fixed
+        - output_dir : output directory where the graphs will be written
+    '''
+    path = input_dir
     path_lis = [f for f in listdir(path) if isfile(join(path, f))]
     for i in range(len(path_lis)):
 
-        inputfilename = "./data/mod_gph/"+path_lis[i]
+        inputfilename = input_dir+path_lis[i]
     
         outputname = inputfilename.split('/')[-1]
-        outputname = './data/final_gph/'+ outputname
+        outputname = output_dir+ outputname
         outputfile = open(outputname, 'w+')
 
 
@@ -319,16 +325,16 @@ def num_array():
     plt.hist(arr, bins=200)
     plt.show()
 
-def fix_nodes():
+def fix_nodes(supimg_path,gph_path,output_dir,img_size):
     '''change node feature so that they are attributed based on the 
     center of each of the image crops instead of being attributed based
     on the center point of the superimage
     '''
-    path = "./data/superimg/"
+    path = supimg_path
     path_list = [f for f in listdir(path) if isfile(join(path, f))]
     #path_list = path_list[0:1]
 
-    gph_path = './data/final_gph/'
+    gph_path = gph_path
     #gph_list = [f for f in listdir(path) if isfile(join(path, f))]
     #gph_list = gph_list[0:10]
 
@@ -339,19 +345,24 @@ def fix_nodes():
         height = img.shape[0]
         width = img.shape[1]
 
-        row_times = height/256
-        column_times = width/256
-
-        first_center = [-(width/2)+128, (height/2)-128]
+        row_times = height/img_size
+        column_times = width/img_size
+        #print(row_times,column_times)
+        first_center = [-(width/2)+(img_size/2), (height/2)-(img_size/2)]
+        #print(first_center)
         for j in range(int(row_times)):
             for k in range(int(column_times)):
                 gph_name = name + '_' + str(j) + '_' + str(k) + '.txt'
-                print(gph_name)
+                #print(gph_name)
                 gph = open(gph_path + gph_name, 'r')
                 cont = gph.readlines()
-                nodes, edges = gphtols_view(cont)
+                nodes, edges = gphtols_view(cont,False)
                 #print(nodes)
-                center = [first_center[0]+(256*k),first_center[1]-(256*j)]
+                center = [first_center[0]+(img_size*k),first_center[1]-(img_size*j)]
+                
+                """ if k<3 and j<3 :
+                    print(gph_name)
+                    print(nodes[0:3]) """
                 #print(center)
 
                 for l in range(len(nodes)):
@@ -372,15 +383,19 @@ def fix_nodes():
                         y = 0.0
                     
                     nodes[l] = [x,y]
+                    if x>img_size or x<-img_size or y>img_size or y<-img_size :
+                        print(name)
+                """ if k<3 and j<3 :
+                    
+                    print(center)
+                    print(nodes[0:3]) """
+                write_gph(output_dir+gph_name,nodes,edges)
                 
-                write_gph('./data/nodes_fixed/'+gph_name,nodes,edges)
-                
-                
-    
 
 if __name__ == "__main__":
-    fix_nodes()
-    #dup_remove()
-    #sort_latlon()
+    crop_to_gph('./data/supergph/','./data/crop_graph/', True)
+    dup_remove('./data/crop_graph/','./data/dup_rmgph/')
+    sort_latlon('./data/dup_rmgph/','./data/sorted_gph/')
+    fix_nodes('./data/superimg/','./data/sorted_gph/','./data/nodes_fixed/',256)
     #num_array()
     #create_data()

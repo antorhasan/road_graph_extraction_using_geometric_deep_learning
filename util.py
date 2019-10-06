@@ -126,24 +126,32 @@ def mergeimg(lis):
 
         cv2.imwrite('./data/superimg/'+ w +'.png', pre_con_img)
 
-def crop_gph_256(nodes, edges, name):
-    '''crops the graph to fit the image and also handles cropping through edge lines'''
+def crop_gph_256(nodes, edges, name, outdir, crop_size):
+    '''crops the graph to fit the image and also handles cropping through edge lines.
+    After cropping the 
+    Args :
+        - nodes : list of nodes of the graph to crop
+        - edges : list of edges of the graph to crop
+        - name : name of the super image of which the shapes will be used
+        - outdir : output directory where the graphs will be written
+        - crop_size : crop window (256 recommended)
+    '''
 
     img_path = './data/data/superimg/'
     img = cv2.imread(img_path + name + '.png')
     
-    x_len = float((img.shape[0])/2)
-    y_len = float((img.shape[1])/2)
+    x_len = float((img.shape[1])/2)
+    y_len = float((img.shape[0])/2)
 
-    for i in range(int(img.shape[0]/256)):
+    for i in range(int(img.shape[0]/crop_size)):
         
-        for j in range(int(img.shape[1]/256)):
+        for j in range(int(img.shape[1]/crop_size)):
 
             '''boundary lines'''
-            line1 = LineString([(-x_len+(j*256), y_len-(i*256)), (-x_len+((j+1)*256), y_len-(i*256))])
-            line2 = LineString([(-x_len+((j+1)*256), y_len-(i*256)), (-x_len+((j+1)*256), y_len-((i+1)*256))])
-            line3 = LineString([(-x_len+((j+1)*256), y_len-((i+1)*256)), (-x_len+(j*256), y_len-((i+1)*256))])
-            line4 = LineString([(-x_len+(j*256), y_len-((i+1)*256)), (-x_len+(j*256), y_len-(i*256))])
+            line1 = LineString([(-x_len+(j*crop_size), y_len-(i*crop_size)), (-x_len+((j+1)*crop_size), y_len-(i*crop_size))])
+            line2 = LineString([(-x_len+((j+1)*crop_size), y_len-(i*crop_size)), (-x_len+((j+1)*crop_size), y_len-((i+1)*crop_size))])
+            line3 = LineString([(-x_len+((j+1)*crop_size), y_len-((i+1)*crop_size)), (-x_len+(j*crop_size), y_len-((i+1)*crop_size))])
+            line4 = LineString([(-x_len+(j*crop_size), y_len-((i+1)*crop_size)), (-x_len+(j*crop_size), y_len-(i*crop_size))])
             #print(-x_len+(j*256),y_len-(i*256),-x_len+((j+1)*256),y_len-((i+1)*256))
             lis_lines = [line1, line2, line3, line4]
             new_node = []
@@ -154,8 +162,8 @@ def crop_gph_256(nodes, edges, name):
                 node_2 = nodes[edges[k][1]]
 
                 '''conditions for checking if the nodes are in boundary'''
-                cond_1 = (-x_len+(j*256)) <= node_1[0] <= (-x_len+((j+1)*256)) and (y_len-((i+1)*256)) <= node_1[1] <= (y_len-(i*256))
-                cond_2 = (-x_len+(j*256)) <= node_2[0] <= (-x_len+((j+1)*256)) and (y_len-((i+1)*256)) <= node_2[1] <= (y_len-(i*256))
+                cond_1 = (-x_len+(j*crop_size)) <= node_1[0] <= (-x_len+((j+1)*crop_size)) and (y_len-((i+1)*crop_size)) <= node_1[1] <= (y_len-(i*crop_size))
+                cond_2 = (-x_len+(j*crop_size)) <= node_2[0] <= (-x_len+((j+1)*crop_size)) and (y_len-((i+1)*crop_size)) <= node_2[1] <= (y_len-(i*crop_size))
                 #print(node_1,node_2,(-x_len+(j*256)),(-x_len+((j+1)*256)),(y_len-(i*256)),(y_len-((i+1)*256)))
                 
                 #print(cond_1,cond_2)
@@ -225,7 +233,7 @@ def crop_gph_256(nodes, edges, name):
                 b = dic_in[new_edge[k][1]]
                 ed.append(tuple([a,b]))
         
-            write_gph('./data/graph/'+ name +'_'+str(i)+'_'+str(j)+'.txt', new_node, ed)
+            write_gph(outdir + name +'_'+str(i)+'_'+str(j)+'.txt', new_node, ed)
 
         print(i)
 
@@ -392,9 +400,18 @@ def gphtols(graph):
     
     return ls_node,ls_edge
 
-def gphtols_view(graph):
-    '''convert .graph txt file to lists of nodes and edges, does not flip along horizontal axis
-    and ready it for further processing so that it can viewed'''
+def gphtols_view(graph,flip):
+
+    '''convert .graph txt file to lists of nodes and edges, have option to flip along horizontal axis
+    and ready it for further processing so that it can viewed
+    Args : 
+        - graph : output from. readlines();meaning an iterable string object.
+        - flip : python boolean. whether to flip along horizontal axis.
+    Returns :
+        - list of nodes.
+        - list of edges.
+    '''
+    
     ls_node = []
     ls_edge = []
 
@@ -404,7 +421,10 @@ def gphtols_view(graph):
             lis = graph[i].split()
             for j in range(len(lis)):
                 if j == 1 :
-                    lis[j] = float(lis[j])  
+                    if flip == True :
+                        lis[j] = - float(lis[j])
+                    elif flip == False :
+                        lis[j] = float(lis[j])
                 else:
                     lis[j] = float(lis[j])
             ls_node.append(lis)
@@ -425,5 +445,5 @@ def gphtols_view(graph):
     return ls_node,ls_edge
 
 if __name__ == "__main__":
-    #crop_gph_256
+    crop_gph_256()
     pass

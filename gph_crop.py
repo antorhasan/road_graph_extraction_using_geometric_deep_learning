@@ -34,29 +34,31 @@ def make_gph(nodes, edges, index):
     nx.draw(G, pos)
     plt.show()
 
-def crop_to_gph(gph_path):
-    '''crop graph txt according to given super img files'''
+def crop_to_gph(gph_path, outdir, flip):
+    '''crop graph txt according to given super img files
+    Args :
+        - gph_path : path of the supergraphs which needs cropping
+        - outdir : output directory where the cropped graphs will be written
+    '''
 
     f = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
-    f = f[6:7]
+    #f = f[0:7]
 
     for i in f :
         gph = open(gph_path + i, 'r')
         cont = gph.readlines()
         #print(len(cont))
-        ls_node, ls_edge = gphtols_view(cont)
+        ls_node, ls_edge = gphtols_view(cont,flip)
         #ls_node, ls_edge = gphtols(cont)
         name = i.split('.')[0]
         print(name)
         #print(ls_edge)
         gph.close()
         #nodes, edges, index = gph_crop(ls_node, ls_edge, name)
-        
         #nodes, edges, index = crop_p(ls_node, ls_edge, name)
-        crop_gph_256(ls_node, ls_edge, name)
+        crop_gph_256(ls_node, ls_edge, name, outdir, 256)
         #make_gph(nodes, edges, index)
         #write_gph('./data/try/'+ name +'.txt', nodes, edges)
-crop_to_gph('./data/data/supergph/')
 
 def view_gph(path):
     
@@ -71,7 +73,10 @@ def view_gph(path):
         #ls_node, ls_edge = gphtols(cont)
         make_gph(ls_node, ls_edge, range(len(ls_node))) 
 
+if __name__ == "__main__":
+    crop_to_gph('./data/supergph/','./data/crop_graph/', True)
 
+    pass
 #fol_path = '../road_trc/dataset/data/graphs/'
 #crop_to_gph(fol_path)
 #fol_path = './data/supergph/'

@@ -6,7 +6,8 @@ import cv2
 import scipy as sp
 import numpy as np
 import tensorflow as tf
-from preprocess import mean_std, change_range
+from util import gphtols_view
+#from preprocess import mean_std, change_range
 
 #tf.enable_eager_execution()
 
@@ -106,25 +107,23 @@ def path_sort(path):
 class view_graph():
     '''plot graph
     '''
-    def __init__(self,path):
-
-
+    def __init__(self,path,flip):
         '''plot graph from a text file
-        argument : path to the text files
-        output : matplotlib plot of the graphs in the folder
+        Args : 
+            - path : to the text files
+        Returns : 
+            - matplotlib plot of the graphs in the folder
         '''
         f = [f for f in listdir(path) if isfile(join(path, f))]
         #f = f[0:3]
         #print(f)
-        arr = []
-        shob = []
         for i in f :
             print(i)
             gph = open(path + i, 'r')
             cont = gph.readlines()
-            ls_node, ls_edge = gphtols_view(cont)
-            make_graph(ls_node, ls_edge, range(len(ls_node)))
-
+            ls_node, ls_edge = gphtols_view(cont,flip)
+            graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
+            graph.show_graph()
     
 def view_gph(path):
     '''get path and view all graphs'''
@@ -169,7 +168,7 @@ def view_gph(path):
     plt.hist(last,bins=200)
     plt.show()
 
-
+""" 
 class create_gph():
     '''a graph is visualized from nodes,edges and position'''
     
@@ -191,13 +190,23 @@ class create_gph():
     def get_adj(self):
         '''returns the adjacency matrix of the graph'''
         A = nx.adjacency_matrix(self.graph)
-        return A.todense()
+        return A.todense() """
 
 class make_graph():
+    '''create a networkx graph object. methods include : plot the graph
+    and get number of nodes of the graph'''
 
     def __init__(self, nodes, edges, index):
+
         '''create graph objects from nodes,edges and index list
-        and plot the graph'''
+        Args :
+            - nodes : list of graph nodes
+            - edges : list of graph edges
+            - index : list of position of the graph nodes
+        Properties :
+            - positions : list of index of the graph
+            - graph : networkx graph object
+        '''
         G = nx.Graph()
         counter = 0
         for i in index:
@@ -212,10 +221,15 @@ class make_graph():
         self.graph = G
     
     def show_graph(self):
+        '''plot the networkx graph aligning node positions'''
         nx.draw(self.graph, self.positions)
         plt.show()
     
     def get_number_nodes(self):
+        '''return number of nodes of a graph
+        Returns :
+            - number of nodes in a graph as python int
+        '''
         return self.graph.number_of_nodes()
 
     
@@ -239,43 +253,6 @@ def make_gph(nodes, edges, index):
     #nx.draw(G, pos)
     #plt.show()
     return G.number_of_nodes()
-
-
-def gphtols_view(graph):
-    "convert .graph txt file to lists of nodes and edges and does not flip along horizontal axis"
-    ls_node = []
-    ls_edge = []
-
-    for i in range(len(graph)):
-
-        if graph[i]!='\n':
-            lis = graph[i].split()
-            for j in range(len(lis)):
-                if j == 1 :
-                    lis[j] = float(lis[j])  
-                else:
-                    lis[j] = float(lis[j])
-            ls_node.append(lis)
-            #print(ls_node)
-        else:
-            var = i
-            #print(var)
-            break
-
-    for j in range(var+1,len(graph)):
-        lis = graph[j].split()
-        #print(lis)
-        for k in range(len(lis)):
-            lis[k] = int(lis[k])
-        ls_edge.append(tuple(lis))
-        #print(*ls_edge[j])
-    
-    return ls_node,ls_edge
-
-#view_gph('./data/test/gph/')
-#view_gph('./data/gph_data/')
-#print(np.load('./data/numpy_arrays/num_nodes.npy'))
-#view_gph('./data/test/gph/')
 
 def unknown():
     path = './data/superimg/'
@@ -310,8 +287,8 @@ def unknown():
 
 if __name__ == "__main__":
     #view_graph('./data/temp/')
-    #view_graph('./data/was/')
-    view_gph('./data/nodes_fixed/')
+    view_graph('./data/nodes_fixed/',False)
+    #view_gph('./data/nodes_fixed/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))

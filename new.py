@@ -7,7 +7,7 @@ import scipy as sp
 import numpy as np
 import tensorflow as tf
 from util import gphtols_view
-#from preprocess import mean_std, change_range
+from preprocess import mean_std, change_range
 
 #tf.enable_eager_execution()
 
@@ -128,7 +128,7 @@ class view_graph():
 def view_gph(path):
     '''get path and view all graphs'''
     f = [f for f in listdir(path) if isfile(join(path, f))]
-    #f = f[0:2000]
+    f = f[0:2000]
     #print(f)
     arr = []
     shob = []
@@ -136,7 +136,7 @@ def view_gph(path):
         #print(i)
         gph = open(path + i, 'r')
         cont = gph.readlines()
-        ls_node, ls_edge = gphtols_view(cont)
+        ls_node, ls_edge = gphtols_view(cont,False)
         if np.asarray(ls_node).any() > 256 or np.asarray(ls_node).any() < -256 :
             print(i)
         #ls_node, ls_edge = gphtols(cont)
@@ -287,8 +287,8 @@ def unknown():
 
 if __name__ == "__main__":
     #view_graph('./data/temp/')
-    view_graph('./data/nodes_fixed/',False)
-    #view_gph('./data/nodes_fixed/')
+    #view_graph('./data/nodes_fixed/',False)
+    view_gph('./data/nodes_fixed/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))

@@ -7,7 +7,7 @@ from os import listdir
 from os.path import isfile, join
 from gph_crop import *
 import matplotlib.pyplot as plt
-from util import write_gph, gphtols_view
+#from util import write_gph, gphtols_view
 
 
 def _bytes_feature(value):
@@ -16,7 +16,7 @@ def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 
-def createDataRecord(out_filename, addrs_y):
+def createDataRecord(out_filename, addrs_y, img_path, gph_path):
     mean = np.load('./data/numpy_arrays/first/mean.npy')
     std = np.load('./data/numpy_arrays/first/std.npy')
     a = np.load('./data/numpy_arrays/first/a.npy')
@@ -31,11 +31,11 @@ def createDataRecord(out_filename, addrs_y):
         print(i)
         if i == 0 :
             print(addrs_y[i])
-        img_y = cv2.imread('./data/img/' + str(addrs_y[i]))
+        img_y = cv2.imread(img_path + str(addrs_y[i]))
         img_y = img_y/255
         img_y = np.asarray(img_y,dtype=np.float32) #all data has to be converted to np.float32 before writing
         
-        gph = open('./data/final_gph/' + addrs_y[i].split('.')[0] + '.txt', 'r')
+        gph = open(gph_path + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont)
         if i == 0 :
@@ -81,18 +81,26 @@ def createDataRecord(out_filename, addrs_y):
 
     #print(np.amax(num_n),np.amin(num_n))
 
-def create_data():
-    #path = "./data/test/img/"   #test data only amsterdam
-    path = "./data/img/"        #full data
-
-    trainY_list = [f for f in listdir(path) if isfile(join(path, f))]
-
-    #trainY_list = trainY_list[0:61440]
-    trainY_list = trainY_list[61440:76800]
-
-    #trainY = 
-
-    createDataRecord("./data/record/train_15.tfrecords", trainY_list)
+def create_data(img_path,gph_path,dataset,split):
+    '''create tfrecord from image and graph patches
+    Args :
+        - img_path : image directory
+        - gph_path : graph directory
+        - dataset : 'train' or 'test'. Also, serves as tfrecord name
+        - split : percentage to split into
+    '''
+    
+    trainY_list = [f for f in listdir(img_path) if isfile(join(img_path, f))]
+    #print(len(trainY_list))
+    total_num = len(trainY_list)
+    split_num = len(trainY_list)*split
+    if dataset == 'train':
+        path_list = trainY_list[0:split_num]
+    elif dataset == 'test':
+        path_list = trainY_list[split_num:total_num]
+    print(len(path_list))
+    #trainY_list = trainY_list[61440:76800]
+    #createDataRecord('./data/record/'+ dataset +'.tfrecords', path_list, img_path, gph_path)
     #createDataRecord("./data/record/val.tfrecords", val_Y)
 
 
@@ -390,12 +398,15 @@ def fix_nodes(supimg_path,gph_path,output_dir,img_size):
                     print(center)
                     print(nodes[0:3]) """
                 write_gph(output_dir+gph_name,nodes,edges)
-                
 
-if __name__ == "__main__":
+def crop_fix():
+    '''crop into 256 from original .graph txt file and fix all node and edge list'''
     crop_to_gph('./data/supergph/','./data/crop_graph/', True)
     dup_remove('./data/crop_graph/','./data/dup_rmgph/')
     sort_latlon('./data/dup_rmgph/','./data/sorted_gph/')
     fix_nodes('./data/superimg/','./data/sorted_gph/','./data/nodes_fixed/',256)
+
+if __name__ == "__main__":
+   
     #num_array()
-    #create_data()
+    create_data('./data/img/','./data/nodes_fixed/','train',0.8)

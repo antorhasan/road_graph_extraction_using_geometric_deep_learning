@@ -1,2 +1,2 @@
 # graph_r
-graph neural network approach to extracting road networks
+graph neural network approach for extracting road networks from satellite images 

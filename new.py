@@ -286,7 +286,6 @@ def unknown():
 
 
 if __name__ == "__main__":
-    #view_graph('./data/temp/')
     #view_graph('./data/nodes_fixed/',False)
     view_gph('./data/nodes_fixed/')
     #view_gph('./data/gph_data/')

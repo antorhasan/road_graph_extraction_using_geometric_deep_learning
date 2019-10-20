@@ -2,7 +2,7 @@ gph_env/
 env/
 env2/
 data/
-*.txt
+#*.txt
 *.png
 # Byte-compiled / optimized / DLL files
 __pycache__/

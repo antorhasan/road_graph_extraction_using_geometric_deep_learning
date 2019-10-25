@@ -95,12 +95,12 @@ def create_data(img_path,gph_path,dataset,split):
     total_num = len(trainY_list)
     split_num = len(trainY_list)*split
     if dataset == 'train':
-        path_list = trainY_list[0:split_num]
+        path_list = trainY_list[0:int(split_num)]
     elif dataset == 'test':
         path_list = trainY_list[split_num:total_num]
     print(len(path_list))
     #trainY_list = trainY_list[61440:76800]
-    #createDataRecord('./data/record/'+ dataset +'.tfrecords', path_list, img_path, gph_path)
+    createDataRecord('./data/record/'+ dataset +'.tfrecords', path_list, img_path, gph_path)
     #createDataRecord("./data/record/val.tfrecords", val_Y)
 
 

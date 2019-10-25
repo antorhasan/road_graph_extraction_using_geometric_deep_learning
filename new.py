@@ -232,6 +232,9 @@ class make_graph():
         '''
         return self.graph.number_of_nodes()
 
+    def get_graph(self):
+        return self.graph
+
     
 def make_gph(nodes, edges, index):
     '''a graph is visualized from nodes,edges and position'''
@@ -287,7 +290,7 @@ def unknown():
 
 if __name__ == "__main__":
     #view_graph('./data/nodes_fixed/',False)
-    view_gph('./data/nodes_fixed/')
+    #view_gph('./data/nodes_fixed/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))

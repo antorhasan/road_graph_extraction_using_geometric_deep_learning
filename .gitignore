@@ -2,13 +2,14 @@ gph_env/
 env/
 env2/
 data/
+env3/
 #*.txt
 *.png
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+*.obj
 # C extensions
 *.so
 

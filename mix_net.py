@@ -84,7 +84,7 @@ class Assign(tf.keras.layers.Layer):
         new_nodes = tf.reshape(new_nodes,[-1,2])
         #print(new_nodes)
         new_nodes = tf.linalg.matmul(s,new_nodes,transpose_a=True)
-        new_nodes = tf.math.tanh(new_nodes)
+        #new_nodes = tf.math.tanh(new_nodes)
         #print(new_nodes)
 
         """ 
@@ -132,28 +132,33 @@ class model(tf.keras.Model):
 
 def loss_object(node_attr_lab, adj_mat_lab, node_attr_pred, adj_mat_pred):
 
-    #node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
+    node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
     #adj_loss = -0.6*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.6)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
     #num_loss = 4*tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
 
-    """ print(node_attr_pred)
+    """ #print(node_attr_pred)
     node_attr_pred = (((node_attr_pred - node_b)/node_a)*node_std)+node_mean
     node_attr_lab = (((node_attr_lab - node_b)/node_a)*node_std)+node_mean
-    print(node_attr_pred,node_attr_lab)
+    #print(node_attr_pred)
+    node_attr_pred = tf.where(node_attr_pred > 128, 128.0, node_attr_pred)
+    node_attr_pred = tf.where(node_attr_pred < -128, -128.0, node_attr_pred)
+    #print(node_attr_pred)
 
     node_p = np.zeros((256,256))
     rows_p = tf.dtypes.cast(node_attr_pred[:,1],dtype=tf.int32)
     columns_p = tf.dtypes.cast(node_attr_pred[:,0],dtype=tf.int32)
     node_p[rows_p,columns_p] = 1.0
     node_attr_pred = tf.dtypes.cast(node_p, tf.float32)
+    node_attr_pred = tf.nn.softmax(node_attr_pred)
 
     node_l = np.zeros((256,256))
-    rows_l = node_attr_lab[:,1]
-    columns_l = node_attr_lab[:,0]
+    rows_l = tf.dtypes.cast(node_attr_lab[:,1],dtype=tf.int32)
+    columns_l = tf.dtypes.cast(node_attr_lab[:,0],dtype=tf.int32)
     node_l[rows_l,columns_l] = 1.0
-    node_attr_lab = tf.dtypes.cast(node_l, tf.float32) """
+    node_attr_lab = tf.dtypes.cast(node_l, tf.float32)
+    node_attr_lab = tf.nn.softmax(node_attr_lab) """
 
-    node_loss = tf.compat.v1.losses.absolute_difference(node_attr_lab, node_attr_pred)
+    #node_loss = tf.compat.v1.losses.absolute_difference(node_attr_lab, node_attr_pred)
     adj_loss = tf.compat.v1.losses.absolute_difference(adj_mat_lab, adj_mat_pred)
     total = node_loss+adj_loss
     return node_loss,adj_loss,total
@@ -261,7 +266,7 @@ for epoch in range(EPOCHS):
             #run_num = 0
             #`break
 #model.load_weights('./data/model/weight.h5')
-model.save_weights('./data/model/weight_range_fixed.h5')
+model.save_weights('./data/model/weight_softmax.h5')
 
 
 dataset_test = tf.data.TFRecordDataset('./data/record/val.tfrecords')

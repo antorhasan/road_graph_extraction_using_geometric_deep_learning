@@ -7,9 +7,40 @@ import scipy as sp
 import numpy as np
 import tensorflow as tf
 from util import gphtols_view
-from preprocess import mean_std, change_range
+#from preprocess import mean_std, change_range
 
 #tf.enable_eager_execution()
+
+
+
+def change_range(data,folder):
+    newmin = -1
+    newmax = 1
+    newR = newmax - newmin
+    oldmin = np.amin(data)
+    oldmax = np.amax(data)
+    oldR = oldmax-oldmin
+    a = newR / oldR
+    b = newmin - ((oldmin*newR)/oldR)
+    new_data = (data*a) + b
+    np.save('./data/numpy_arrays/'+folder+'/a', a)
+    np.save('./data/numpy_arrays/'+folder+'/b', b)
+    return new_data,a,b
+
+
+def mean_std(data, folder):
+    '''given a numpy array, calculate and save mean and std'''
+    data = np.asarray(data)
+    mean = np.mean(data, axis=0)
+    std = np.std(data, axis=0)
+    np.save('./data/numpy_arrays/'+folder+'/mean', mean)
+    np.save('./data/numpy_arrays/'+folder+'/std', std)
+    #print(data.shape)
+    #print(mean.shape)
+    #print(mean)
+    #print(meam)
+    #print(std.shape)
+    return mean, std
 
 def Neighbors(i, row, col):
     top = i-col
@@ -239,6 +270,9 @@ class make_graph():
         '''returns the adjacency matrix of the graph'''
         A = nx.adjacency_matrix(self.graph)
         return A.todense()
+
+    def remove_n(self, list):
+        self.graph.remove_node(list)
     
 def make_gph(nodes, edges, index):
     '''a graph is visualized from nodes,edges and position'''
@@ -291,11 +325,53 @@ def unknown():
     print(num)
 
 
+def write_gph(path, nodes, edges):
+    '''given nodes and edges list of a graph, it is written as txt'''
+    with open(path, 'w') as f:
+        for item in nodes:
+            f.write("%s" % str(item[0]))
+            f.write(" ")
+            f.write("%s\n" % str(item[1]))
+        f.write("\n")
+        for e in edges:
+            f.write("%s" % str(e[0]))
+            f.write(" ")
+            f.write("%s\n" % str(e[1]))
+
+
+def crop_to_gph(gph_path, outdir, flip):
+    '''crop graph txt according to given super img files
+    Args :
+        - gph_path : path of the supergraphs which needs cropping
+        - outdir : output directory where the cropped graphs will be written
+    '''
+
+    f = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
+    #f = f[0:7]
+
+    for i in f :
+        gph = open(gph_path + i, 'r')
+        cont = gph.readlines()
+        #print(len(cont))
+        ls_node, ls_edge = gphtols_view(cont,flip)
+        #ls_node, ls_edge = gphtols(cont)
+        name = i.split('.')[0]
+        print(name)
+        #print(ls_edge)
+        gph.close()
+        #nodes, edges, index = gph_crop(ls_node, ls_edge, name)
+        #nodes, edges, index = crop_p(ls_node, ls_edge, name)
+        crop_gph_256(ls_node, ls_edge, name, outdir, 256)
+        #make_gph(nodes, edges, index)
+        #write_gph('./data/try/'+ name +'.txt', nodes, edges)
+
+
 
 if __name__ == "__main__":
     #view_gph('./data/nodes_fixed/')
-    view_graph('./data/nodes_fixed/',False)
+    view_graph('./data/output/output/',False)
     #view_gph('./data/nodes_fixed/')
+    #crop_to_gph('./data/supergph/','./data/crop_graph/', True)
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))

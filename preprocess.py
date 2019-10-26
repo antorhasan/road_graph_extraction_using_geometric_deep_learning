@@ -7,8 +7,9 @@ from os import listdir
 from os.path import isfile, join
 from gph_crop import gphtols_view
 import matplotlib.pyplot as plt
-#from util import write_gph, gphtols_view
-#from new import make_graph
+from util import write_gph, gphtols_view
+from new import make_graph
+import networkx as nx
 
 
 def _bytes_feature(value):
@@ -285,34 +286,6 @@ def sort_latlon(input_dir,output_dir):
         outputfile.close()
 
 
-def mean_std(data, folder):
-    '''given a numpy array, calculate and save mean and std'''
-    data = np.asarray(data)
-    mean = np.mean(data, axis=0)
-    std = np.std(data, axis=0)
-    np.save('./data/numpy_arrays/'+folder+'/mean', mean)
-    np.save('./data/numpy_arrays/'+folder+'/std', std)
-    #print(data.shape)
-    #print(mean.shape)
-    #print(mean)
-    #print(meam)
-    #print(std.shape)
-    return mean, std
-
-def change_range(data,folder):
-    newmin = -1
-    newmax = 1
-    newR = newmax - newmin
-    oldmin = np.amin(data)
-    oldmax = np.amax(data)
-    oldR = oldmax-oldmin
-    a = newR / oldR
-    b = newmin - ((oldmin*newR)/oldR)
-    new_data = (data*a) + b
-    np.save('./data/numpy_arrays/'+folder+'/a', a)
-    np.save('./data/numpy_arrays/'+folder+'/b', b)
-    return new_data,a,b
-
 def num_array():
     '''save mean,std,a,b of number of nodes of the graphs'''
     
@@ -407,7 +380,117 @@ def crop_fix():
     sort_latlon('./data/dup_rmgph/','./data/sorted_gph/')
     fix_nodes('./data/superimg/','./data/sorted_gph/','./data/nodes_fixed/',256)
 
+def fix_out_adj():
+    '''merge binary output adjacency matrix and node attributes txt file into one 
+    for easy visualization'''
+
+    adj_path = './data/output/adj/'
+    f = [f for f in listdir(adj_path) if isfile(join(adj_path, f))]
+    #f = f[0:1]
+
+    node_path = './data/output/node/'
+    n_path = [f for f in listdir(node_path) if isfile(join(node_path, f))]
+    n_path = n_path[0:1]
+
+    for i in f :
+        print(i)
+        new_adj = []
+        adj = open(adj_path + i, 'r')
+        cont = adj.readlines()
+        #print(len(cont))
+        list_for_node = []
+        for j in range(len(cont)):
+            if cont[j]!='\n':
+                lis = cont[j].split()
+                for k in range(len(lis)):
+                    if int(float(lis[k])) == 1 :
+                        new_adj.append([j,k])
+        
+                for k in range(len(lis)):
+                    if int(float(lis[k])) == 1 :
+                        list_for_node.append(j)
+                        break
+        
+        #print(list_for_node)
+        
+        #print(new_adj)
+
+        node_file = i.split('.')[0]
+        
+        new_node = []
+        node = open(node_path + 'node'+str(node_file[3]) + '.txt', 'r')
+        node_lines = node.readlines()
+        #print(len(cont))
+        """ for j in range(len(node_lines)):
+            if node_lines[j]!='\n':
+                lis = node_lines[j].split()
+                row_node = []
+                for k in range(len(lis)):
+                    row_node.append(float(lis[k]))
+                new_node.append(row_node) """
+
+        for j in list_for_node:
+            lis = node_lines[j].split()
+            row_node = []
+            for k in range(len(lis)):
+                row_node.append(float(lis[k]))
+            new_node.append(row_node)
+
+        #print(new_node)
+
+        with open('./data/output/output/'+str(i), 'w') as f:
+            for node in new_node:
+                s = str(node[0]) + " " + str(node[1]) + "\n"
+                f.write(s)
+            
+            f.write("\n")
+
+            for adj in new_adj:
+                s = str(adj[0]) + " " + str(adj[1]) + "\n"
+                f.write(s)
+        
+def node_out_128():
+    '''exclude the 128 and -128 values from the node attribute txt files and 
+    write new node attribute files'''
+    
+    node_path = './data/nodes_fixed/'
+    f = [f for f in listdir(node_path) if isfile(join(node_path, f))]
+    f = f[0:1]
+    for i in f :
+        #print(i)
+        gph = open(node_path + i, 'r')
+        cont = gph.readlines()
+        ls_node, ls_edge = gphtols_view(cont,False)
+
+        graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
+        nodes = np.asarray(ls_node)
+
+        wh_128 = np.where(nodes == 128.0 )
+        wh_128 = list(wh_128[0])
+        wh_128n = np.where(nodes == -128.0 )
+        wh_128n = list(wh_128n[0])
+
+        full_list = wh_128 + wh_128n
+
+        for j in range(len(full_list)):
+            graph.remove_n(full_list[j])
+
+        adj = nx.attr_matrix(graph.get_graph())[0]
+        edges = []
+
+        for j in range(adj.shape[0]):
+            for k in range(adj.shape[1]):
+                if adj[j,k] == 1. :
+                    edges.append([j,k])
+
+        nodes = list(nx.get_node_attributes(graph.get_graph(),name='coor').values())
+
+        print(nodes,edges)
+
+
 if __name__ == "__main__":
-   
+    node_out_128()
+    #fix_out_adj()
     #num_array()
-    create_data('./data/img/','./data/nodes_fixed/','val',0.8)
+    #create_data('./data/img/','./data/nodes_fixed/','val',0.8)
+    pass

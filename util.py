@@ -4,6 +4,7 @@ import cv2
 import shapely      #needed for calculating intersections
 from shapely.geometry import LineString, Point
 #from gph_crop import write_gph
+
 def write_gph(path, nodes, edges):
     '''given nodes and edges list of a graph, it is written as txt'''
     with open(path, 'w') as f:

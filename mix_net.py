@@ -3,13 +3,15 @@ from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax, MaxPool2D
 import numpy as np
 import math
 import cv2
+from sklearn.preprocessing import QuantileTransformer
+
 
 #tf.compat.v1.enable_eager_execution()
 
-node_mean = np.load('./data/numpy_arrays/final/mean.npy')
-node_std = np.load('./data/numpy_arrays/final/std.npy')
-node_a = np.load('./data/numpy_arrays/final/a.npy')
-node_b = np.load('./data/numpy_arrays/final/b.npy')
+#node_mean = np.load('./data/numpy_arrays/final/mean.npy')
+#node_std = np.load('./data/numpy_arrays/final/std.npy')
+node_a = np.load('./data/numpy_arrays/out_128/a.npy')
+node_b = np.load('./data/numpy_arrays/out_128/b.npy')
 
 #num_a = np.load('./data/numpy_arrays/nodes/a.npy')
 #num_b = np.load('./data/numpy_arrays/nodes/b.npy')
@@ -217,7 +219,7 @@ def train_step(images, node_attr_lab, adj_mat_lab, dim):
     
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-dataset = dataset.shuffle(4000)
+#dataset = dataset.shuffle(4000)
 #dataset = dataset.batch(1)
 
 model = model()
@@ -234,6 +236,10 @@ run_t = 0
 run_nod = 0
 run_adj = 0
 run_num = 0
+array = np.load('./data/numpy_arrays/nodes_out_128.npy')
+qt = QuantileTransformer(output_distribution='normal')
+shob = qt.fit_transform(array)
+
 for epoch in range(EPOCHS):
     for i,n,a in dataset:
         #l = (l-num_b)/num_a
@@ -246,7 +252,10 @@ for epoch in range(EPOCHS):
         n = np.reshape(n, (dim,2))
         a = np.reshape(a, (dim,dim))
         #node_features = (((n - node_b)/node_a)*node_std)+node_mean
-        #print(i,node_features,a)
+        node_features = (n - node_b)/node_a
+        node_features = qt.inverse_transform(node_features)
+        print(i,node_features,a)
+        print(asd)
         #print(i,j,k,l)
         #metric = train_step(i,j,k,l,dim)
         metric, node_loss, adj_loss = train_step(i,n,a,dim)

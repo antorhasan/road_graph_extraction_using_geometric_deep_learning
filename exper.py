@@ -50,14 +50,14 @@ arr = np.load('./data/numpy_arrays/all_nodes.npy')
 #print(arr[0])
 
 wh_128 = np.where(arr == 128.0 )
-#print(wh_128[0])
+print(wh_128[0])
 
 new_arr = np.delete(arr, wh_128, 0)
-
+print(new_arr[0:6,:])
 wh_128 = np.where(new_arr == -128.0 )
 new_arr = np.delete(new_arr, wh_128, 0)
-
-print(new_arr,new_arr.shape)
+test = new_arr
+#print(new_arr,new_arr.shape)
 
 plt.hist(new_arr,bins=200)
 plt.show()
@@ -68,5 +68,14 @@ new_arr = qt.fit_transform(new_arr)
 
 plt.hist(new_arr,bins=200)
 plt.show()
-print(new)
+#print(new)
+print(arr[0:6,:])
+nump = test[0:6,:]
+print(nump)
+nump = qt.transform(nump)
+print(nump)
+nump = qt.inverse_transform(nump)
+print(nump)
+
+
 #for i in range(len(arr)):

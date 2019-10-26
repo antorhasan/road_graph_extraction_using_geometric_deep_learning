@@ -6,8 +6,9 @@ import cv2
 import scipy as sp
 import numpy as np
 import tensorflow as tf
-from util import gphtols_view
-#from preprocess import mean_std, change_range
+from util import gphtols_view, crop_gph_256
+from sklearn.preprocessing import QuantileTransformer
+
 
 #tf.enable_eager_execution()
 
@@ -156,7 +157,7 @@ class view_graph():
             graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
             graph.show_graph()
     
-def view_gph(path):
+def view_normalize(path):
     '''get path and view all graphs'''
     f = [f for f in listdir(path) if isfile(join(path, f))]
     #f = f[0:2000]
@@ -168,7 +169,7 @@ def view_gph(path):
         gph = open(path + i, 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont,False)
-        if np.asarray(ls_node).any() > 256 or np.asarray(ls_node).any() < -256 :
+        if np.asarray(ls_node).any() > 128 or np.asarray(ls_node).any() < -128 :
             print(i)
         #ls_node, ls_edge = gphtols(cont)
         #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
@@ -182,22 +183,31 @@ def view_gph(path):
         for j in range(len(ls_node)):
             shob.append(ls_node[j])
             arr.append(ls_node[j][0])
-    arr = np.asarray(arr)
+    #arr = np.asarray(arr)
     #arr = arr+15000
     #shob = arr
     shob = np.asarray(shob)
-    np.save('./data/numpy_arrays/all_nodes.npy', shob)
-    mean, std = mean_std(shob,'final')
-    new_data, a, b = change_range(shob,'final')
-    first = (shob-mean)/std
-    plt.hist(arr,bins=200)
+    np.save('./data/numpy_arrays/nodes_out_128.npy', shob)
+    plt.hist(shob,bins=200)
     plt.show()
-    second = a*first + b
+    qt = QuantileTransformer(output_distribution='normal')
+    shob = qt.fit_transform(shob)
+    plt.hist(shob,bins=200)
+    plt.show()
+    #mean, std = mean_std(shob,'out_128')
+    #shob = (shob-mean)/std
+    #plt.hist(shob,bins=200)
+    #plt.show()
+    new_data, a, b = change_range(shob,'out_128')
+    #first = (shob-mean)/std
+    plt.hist(new_data,bins=200)
+    plt.show()
+    """ second = a*first + b
     plt.hist(second,bins=200)
     plt.show()
     last = np.log(arr)
     plt.hist(last,bins=200)
-    plt.show()
+    plt.show() """
 
 """ 
 class create_gph():
@@ -368,8 +378,8 @@ def crop_to_gph(gph_path, outdir, flip):
 
 
 if __name__ == "__main__":
-    #view_gph('./data/nodes_fixed/')
-    view_graph('./data/output/output/',False)
+    view_normalize('./data/out_128/')
+    #view_graph('./data/out_128/',False)
     #view_gph('./data/nodes_fixed/')
     #crop_to_gph('./data/supergph/','./data/crop_graph/', True)
     #view_gph('./data/gph_data/')

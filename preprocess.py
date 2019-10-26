@@ -5,11 +5,11 @@ import numpy as np
 import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
-from gph_crop import gphtols_view
 import matplotlib.pyplot as plt
-from util import write_gph, gphtols_view
-from new import make_graph
+from util import gphtols_view
+from new import make_graph, write_gph
 import networkx as nx
+from sklearn.preprocessing import QuantileTransformer
 
 
 def _bytes_feature(value):
@@ -19,10 +19,14 @@ def _int64_feature(value):
 
 
 def createDataRecord(out_filename, addrs_y, img_path, gph_path):
-    mean = np.load('./data/numpy_arrays/fixed_node/mean.npy')
-    std = np.load('./data/numpy_arrays/fixed_node/std.npy')
-    a = np.load('./data/numpy_arrays/fixed_node/a.npy')
-    b = np.load('./data/numpy_arrays/fixed_node/b.npy')
+    array = np.load('./data/numpy_arrays/nodes_out_128.npy')
+    qt = QuantileTransformer(output_distribution='normal')
+    shob = qt.fit_transform(array)
+
+    #mean = np.load('./data/numpy_arrays/fixed_node/mean.npy')
+    #std = np.load('./data/numpy_arrays/fixed_node/std.npy')
+    a = np.load('./data/numpy_arrays/out_128/a.npy')
+    b = np.load('./data/numpy_arrays/out_128/b.npy')
 
     #an = np.load('./data/numpy_arrays/nodes/a.npy')
     #bn = np.load('./data/numpy_arrays/nodes/b.npy')
@@ -46,7 +50,12 @@ def createDataRecord(out_filename, addrs_y, img_path, gph_path):
             continue
         #node_attr = np.asarray(ls_node,dtype=np.float32)
         #print(ls_node)
-        node_attr = (a*((ls_node - mean)/std))+b
+        
+        #node_attr = (a*((ls_node - mean)/std))+b
+        node_attr = np.asarray(ls_node,dtype=np.float32)
+        node_attr = qt.transform(node_attr)
+        node_attr = (a*node_attr) + b
+
         node_attr = np.asarray(node_attr,dtype=np.float32)
         #print(node_attr)
         #ls_node, ls_edge = gphtols(cont)
@@ -455,9 +464,9 @@ def node_out_128():
     
     node_path = './data/nodes_fixed/'
     f = [f for f in listdir(node_path) if isfile(join(node_path, f))]
-    f = f[0:1]
+    #f = f[0:10]
     for i in f :
-        #print(i)
+        print(i)
         gph = open(node_path + i, 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont,False)
@@ -485,12 +494,14 @@ def node_out_128():
 
         nodes = list(nx.get_node_attributes(graph.get_graph(),name='coor').values())
 
-        print(nodes,edges)
+        #print(nodes,edges)
+
+        write_gph('./data/out_128/' + i, nodes, edges)
 
 
 if __name__ == "__main__":
-    node_out_128()
+    #node_out_128()
     #fix_out_adj()
     #num_array()
-    #create_data('./data/img/','./data/nodes_fixed/','val',0.8)
+    create_data('./data/img/','./data/out_128/','train_out_128',0.8)
     pass

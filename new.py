@@ -128,7 +128,7 @@ class view_graph():
 def view_gph(path):
     '''get path and view all graphs'''
     f = [f for f in listdir(path) if isfile(join(path, f))]
-    f = f[0:2000]
+    #f = f[0:2000]
     #print(f)
     arr = []
     shob = []
@@ -155,9 +155,9 @@ def view_gph(path):
     #arr = arr+15000
     #shob = arr
     shob = np.asarray(shob)
-    np.save('./data/numpy_arrays/fixed_node.npy', shob)
-    mean, std = mean_std(shob,'fixed_node')
-    new_data, a, b = change_range(shob,'fixed_node')
+    np.save('./data/numpy_arrays/all_nodes.npy', shob)
+    mean, std = mean_std(shob,'final')
+    new_data, a, b = change_range(shob,'final')
     first = (shob-mean)/std
     plt.hist(arr,bins=200)
     plt.show()
@@ -235,6 +235,10 @@ class make_graph():
     def get_graph(self):
         return self.graph
 
+    def get_adj(self):
+        '''returns the adjacency matrix of the graph'''
+        A = nx.adjacency_matrix(self.graph)
+        return A.todense()
     
 def make_gph(nodes, edges, index):
     '''a graph is visualized from nodes,edges and position'''
@@ -289,7 +293,8 @@ def unknown():
 
 
 if __name__ == "__main__":
-    #view_graph('./data/nodes_fixed/',False)
+    #view_gph('./data/nodes_fixed/')
+    view_graph('./data/nodes_fixed/',False)
     #view_gph('./data/nodes_fixed/')
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')

@@ -4,7 +4,7 @@ import numpy as np
 import math
 import cv2
 
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 
 node_mean = np.load('./data/numpy_arrays/first/mean.npy')
 node_std = np.load('./data/numpy_arrays/first/std.npy')
@@ -232,7 +232,7 @@ def train_step(images, node_attr_lab, adj_mat_lab, node_num_lab, dim):
     #return total
     return total,node_loss, adj_loss, num_loss
     
-dataset = tf.data.TFRecordDataset('./data/record/train_25.tfrecords')
+dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
 dataset = dataset.shuffle(6000)
 #dataset = dataset.batch(1)
@@ -242,7 +242,7 @@ model = allmodel()
 #model.load_weights('./data/model/weight.h5')
 #model.save('./data/model/',save_format='h5')
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=.00001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
 #train_loss = tf.keras.metrics.Sum()
 
 EPOCHS = 2
@@ -283,7 +283,7 @@ for epoch in range(EPOCHS):
 #model.save_weights('./data/model/weight.h5')
 
 
-dataset_test = tf.data.TFRecordDataset('./data/record/train_15.tfrecords')
+dataset_test = tf.data.TFRecordDataset('./data/record/val.tfrecords')
 dataset_test = dataset_test.map(_parse_function)
 dataset_test = dataset_test.shuffle(6000)
 

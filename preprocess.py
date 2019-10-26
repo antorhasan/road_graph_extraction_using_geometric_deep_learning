@@ -5,9 +5,10 @@ import numpy as np
 import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
-from gph_crop import *
+from gph_crop import gphtols_view
 import matplotlib.pyplot as plt
 #from util import write_gph, gphtols_view
+#from new import make_graph
 
 
 def _bytes_feature(value):
@@ -17,16 +18,16 @@ def _int64_feature(value):
 
 
 def createDataRecord(out_filename, addrs_y, img_path, gph_path):
-    mean = np.load('./data/numpy_arrays/first/mean.npy')
-    std = np.load('./data/numpy_arrays/first/std.npy')
-    a = np.load('./data/numpy_arrays/first/a.npy')
-    b = np.load('./data/numpy_arrays/first/b.npy')
+    mean = np.load('./data/numpy_arrays/fixed_node/mean.npy')
+    std = np.load('./data/numpy_arrays/fixed_node/std.npy')
+    a = np.load('./data/numpy_arrays/fixed_node/a.npy')
+    b = np.load('./data/numpy_arrays/fixed_node/b.npy')
 
-    an = np.load('./data/numpy_arrays/nodes/a.npy')
-    bn = np.load('./data/numpy_arrays/nodes/b.npy')
+    #an = np.load('./data/numpy_arrays/nodes/a.npy')
+    #bn = np.load('./data/numpy_arrays/nodes/b.npy')
     
     #num_n = []
-    writer = tf.python_io.TFRecordWriter(out_filename)
+    writer = tf.io.TFRecordWriter(out_filename)
     for i in range(len(addrs_y)):
         print(i)
         if i == 0 :
@@ -37,7 +38,7 @@ def createDataRecord(out_filename, addrs_y, img_path, gph_path):
         
         gph = open(gph_path + addrs_y[i].split('.')[0] + '.txt', 'r')
         cont = gph.readlines()
-        ls_node, ls_edge = gphtols_view(cont)
+        ls_node, ls_edge = gphtols_view(cont,flip = False)
         if i == 0 :
             print(ls_node)
         if len(ls_node)==0 :
@@ -49,12 +50,12 @@ def createDataRecord(out_filename, addrs_y, img_path, gph_path):
         #print(node_attr)
         #ls_node, ls_edge = gphtols(cont)
         #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
-        graph = create_gph(ls_node, ls_edge, range(len(ls_node)))
-        num_nodes = graph.get_num_nodes()
-        num_nodes = np.log(num_nodes)
-        num_nodes = (an*num_nodes)+bn
+        graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
+        #num_nodes = graph.get_num_nodes()
+        #num_nodes = np.log(num_nodes)
+        #num_nodes = (an*num_nodes)+bn
 
-        num_nodes = np.asarray(num_nodes,dtype=np.float32)
+        #num_nodes = np.asarray(num_nodes,dtype=np.float32)
         adj_mtx = graph.get_adj()
         adj_mtx = np.asarray(adj_mtx,dtype=np.float32)
         #num_n.append(num_nodes)
@@ -62,14 +63,14 @@ def createDataRecord(out_filename, addrs_y, img_path, gph_path):
         if i == 0 :
             print(node_attr,node_attr.shape)
             print(adj_mtx)
-            print(num_nodes)
+            #print(num_nodes)
             print(img_y)
 
         feature = {
             'image_y': _bytes_feature(img_y.tostring()),
             'gph_nodes': _bytes_feature(node_attr.tostring()),
-            'gph_adj' : _bytes_feature(adj_mtx.tostring()),
-            'gph_node_num' : _bytes_feature(num_nodes.tostring())
+            'gph_adj' : _bytes_feature(adj_mtx.tostring())
+            #'gph_node_num' : _bytes_feature(num_nodes.tostring())
         }
 
         example = tf.train.Example(features=tf.train.Features(feature=feature))
@@ -96,8 +97,8 @@ def create_data(img_path,gph_path,dataset,split):
     split_num = len(trainY_list)*split
     if dataset == 'train':
         path_list = trainY_list[0:int(split_num)]
-    elif dataset == 'test':
-        path_list = trainY_list[split_num:total_num]
+    elif dataset == 'val':
+        path_list = trainY_list[int(split_num):total_num]
     print(len(path_list))
     #trainY_list = trainY_list[61440:76800]
     createDataRecord('./data/record/'+ dataset +'.tfrecords', path_list, img_path, gph_path)
@@ -409,4 +410,4 @@ def crop_fix():
 if __name__ == "__main__":
    
     #num_array()
-    create_data('./data/img/','./data/nodes_fixed/','train',0.8)
+    create_data('./data/img/','./data/nodes_fixed/','val',0.8)

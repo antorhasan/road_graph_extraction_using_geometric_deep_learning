@@ -219,7 +219,7 @@ def train_step(images, node_attr_lab, adj_mat_lab, dim):
     
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-#dataset = dataset.shuffle(4000)
+dataset = dataset.shuffle(4000)
 #dataset = dataset.batch(1)
 
 model = model()
@@ -230,7 +230,7 @@ model = model()
 optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
 #train_loss = tf.keras.metrics.Sum()
 
-EPOCHS = 5
+EPOCHS = 3
 coun = 0
 run_t = 0
 run_nod = 0
@@ -252,10 +252,8 @@ for epoch in range(EPOCHS):
         n = np.reshape(n, (dim,2))
         a = np.reshape(a, (dim,dim))
         #node_features = (((n - node_b)/node_a)*node_std)+node_mean
-        node_features = (n - node_b)/node_a
-        node_features = qt.inverse_transform(node_features)
-        print(i,node_features,a)
-        print(asd)
+        
+        #print(i,node_features,a)
         #print(i,j,k,l)
         #metric = train_step(i,j,k,l,dim)
         metric, node_loss, adj_loss = train_step(i,n,a,dim)
@@ -274,8 +272,10 @@ for epoch in range(EPOCHS):
             run_adj = 0
             #run_num = 0
             #`break
-#model.load_weights('./data/model/weight.h5')
-model.save_weights('./data/model/weight_softmax.h5')
+
+    model.save_weights('./data/model/weight_out_128.h5')
+    #model.load_weights('./data/model/weight.h5')
+    #model.save_weights('./data/model/weight_softmax.h5')
 
 
 dataset_test = tf.data.TFRecordDataset('./data/record/val.tfrecords')
@@ -300,7 +300,10 @@ for i,n,a in dataset:
     #new_adj = new_adj[0:pred_dim,0:pred_dim]
     #node_features = node_features[0:pred_dim,:]
 
-    node_features = (((node_features - node_b)/node_a)*node_std)+node_mean
+    #node_features = (((node_features - node_b)/node_a)*node_std)+node_mean
+    node_features = (node_features - node_b)/node_a
+    node_features = qt.inverse_transform(node_features)
+
     new_adj = np.where(new_adj>.5, 1.0 , 0)
     np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
     np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)

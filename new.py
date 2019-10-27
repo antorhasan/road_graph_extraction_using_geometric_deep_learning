@@ -378,8 +378,8 @@ def crop_to_gph(gph_path, outdir, flip):
 
 
 if __name__ == "__main__":
-    view_normalize('./data/out_128/')
-    #view_graph('./data/out_128/',False)
+    #view_normalize('./data/out_128/')
+    #view_graph('./data/output/output/',False)
     #view_gph('./data/nodes_fixed/')
     #crop_to_gph('./data/supergph/','./data/crop_graph/', True)
     #view_gph('./data/gph_data/')

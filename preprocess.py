@@ -501,7 +501,7 @@ def node_out_128():
 
 if __name__ == "__main__":
     #node_out_128()
-    #fix_out_adj()
+    fix_out_adj()
     #num_array()
-    create_data('./data/img/','./data/out_128/','val',0.8)
+    #create_data('./data/img/','./data/out_128/','val',0.8)
     pass

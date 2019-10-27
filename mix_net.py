@@ -86,7 +86,7 @@ class Assign(tf.keras.layers.Layer):
         new_nodes = tf.reshape(new_nodes,[-1,2])
         #print(new_nodes)
         new_nodes = tf.linalg.matmul(s,new_nodes,transpose_a=True)
-        #new_nodes = tf.math.tanh(new_nodes)
+        new_nodes = tf.math.tanh(new_nodes)
         #print(new_nodes)
 
         """ 
@@ -227,10 +227,10 @@ model = model()
 #model.load_weights('./data/model/weight.h5')
 #model.save('./data/model/',save_format='h5')
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=.0001)
+optimizer = tf.keras.optimizers.Adam(learning_rate=.001)
 #train_loss = tf.keras.metrics.Sum()
 
-EPOCHS = 3
+EPOCHS = 2
 coun = 0
 run_t = 0
 run_nod = 0

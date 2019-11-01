@@ -281,8 +281,8 @@ class make_graph():
         A = nx.adjacency_matrix(self.graph)
         return A.todense()
 
-    def remove_n(self, list):
-        self.graph.remove_node(list)
+    def remove_n(self, lists):
+        self.graph.remove_node(lists)
     
 def make_gph(nodes, edges, index):
     '''a graph is visualized from nodes,edges and position'''
@@ -335,31 +335,17 @@ def unknown():
     print(num)
 
 
-def write_gph(path, nodes, edges):
-    '''given nodes and edges list of a graph, it is written as txt'''
-    with open(path, 'w') as f:
-        for item in nodes:
-            f.write("%s" % str(item[0]))
-            f.write(" ")
-            f.write("%s\n" % str(item[1]))
-        f.write("\n")
-        for e in edges:
-            f.write("%s" % str(e[0]))
-            f.write(" ")
-            f.write("%s\n" % str(e[1]))
-
-
-def crop_to_gph(gph_path, outdir, flip):
+def crop_to_gph(gph_path, outdir, flip, img_dir):
     '''crop graph txt according to given super img files
     Args :
         - gph_path : path of the supergraphs which needs cropping
         - outdir : output directory where the cropped graphs will be written
     '''
 
-    f = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
-    #f = f[0:7]
+    path = [f for f in listdir(gph_path) if isfile(join(gph_path, f))]
+    #path = path[0:1]
 
-    for i in f :
+    for i in path :
         gph = open(gph_path + i, 'r')
         cont = gph.readlines()
         #print(len(cont))
@@ -371,17 +357,33 @@ def crop_to_gph(gph_path, outdir, flip):
         gph.close()
         #nodes, edges, index = gph_crop(ls_node, ls_edge, name)
         #nodes, edges, index = crop_p(ls_node, ls_edge, name)
-        crop_gph_256(ls_node, ls_edge, name, outdir, 256)
+        crop_gph_256(ls_node, ls_edge, name, outdir, 512, img_dir)
         #make_gph(nodes, edges, index)
         #write_gph('./data/try/'+ name +'.txt', nodes, edges)
 
+def img_crop(inp_dir, out_dir, window):
 
+    image_path = inp_dir
+    path = [f for f in listdir(image_path) if isfile(join(image_path, f))]
+    #path = path[0:1]
+    print(path)
+    for i in range(len(path)):
+        print(i)
+        name = path[i].split('.')[0]
+        img = cv2.imread(inp_dir+str(path[i]))
+
+        for i in range(int(img.shape[0]/window)):
+            for j in range(int(img.shape[1]/window)):
+
+                im = img[window*i:window*(i+1),window*j:window*(j+1)]
+                cv2.imwrite(out_dir+str(name)+'_'+str(i)+'_'+str(j)+'.png', im)
 
 if __name__ == "__main__":
     #view_normalize('./data/out_128/')
-    #view_graph('./data/output/output/',False)
+    #view_graph('./data/graph/',False)
     #view_gph('./data/nodes_fixed/')
-    #crop_to_gph('./data/supergph/','./data/crop_graph/', True)
+    #crop_to_gph('./data/data/supergph/','./data/gph/', False, './data/data/superimg/')
+    #img_crop('./data/data/superimg/', './data/img/',512)
     #view_gph('./data/gph_data/')
     #rr = np.load('./data/numpy_arrays/num_nodes.npy')
     #print(np.amax(arr))

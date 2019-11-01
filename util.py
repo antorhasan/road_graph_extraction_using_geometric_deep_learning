@@ -5,6 +5,18 @@ import shapely      #needed for calculating intersections
 from shapely.geometry import LineString, Point
 #from gph_crop import write_gph
 
+def write_gph(path, nodes, edges):
+    '''given nodes and edges list of a graph, it is written as txt'''
+    with open(path, 'w') as f:
+        for item in nodes:
+            f.write("%s" % str(item[0]))
+            f.write(" ")
+            f.write("%s\n" % str(item[1]))
+        f.write("\n")
+        for e in edges:
+            f.write("%s" % str(e[0]))
+            f.write(" ")
+            f.write("%s\n" % str(e[1]))
 
 def dirtodic(path):
     '''make a dict where the keys are common file name prefixes within a 
@@ -114,7 +126,7 @@ def mergeimg(lis):
 
         cv2.imwrite('./data/superimg/'+ w +'.png', pre_con_img)
 
-def crop_gph_256(nodes, edges, name, outdir, crop_size):
+def crop_gph_256(nodes, edges, name, outdir, crop_size, img_dir):
     '''crops the graph to fit the image and also handles cropping through edge lines.
     After cropping the 
     Args :
@@ -125,7 +137,7 @@ def crop_gph_256(nodes, edges, name, outdir, crop_size):
         - crop_size : crop window (256 recommended)
     '''
 
-    img_path = './data/data/superimg/'
+    img_path = img_dir
     img = cv2.imread(img_path + name + '.png')
     
     x_len = float((img.shape[1])/2)

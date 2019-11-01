@@ -7,7 +7,8 @@ from os import listdir
 from os.path import isfile, join
 import matplotlib.pyplot as plt
 from util import gphtols_view
-from new import make_graph, write_gph
+from new import make_graph
+from util import write_gph
 import networkx as nx
 from sklearn.preprocessing import QuantileTransformer
 
@@ -383,11 +384,11 @@ def fix_nodes(supimg_path,gph_path,output_dir,img_size):
                 write_gph(output_dir+gph_name,nodes,edges)
 
 def crop_fix():
-    '''crop into 256 from original .graph txt file and fix all node and edge list'''
-    crop_to_gph('./data/supergph/','./data/crop_graph/', True)
-    dup_remove('./data/crop_graph/','./data/dup_rmgph/')
-    sort_latlon('./data/dup_rmgph/','./data/sorted_gph/')
-    fix_nodes('./data/superimg/','./data/sorted_gph/','./data/nodes_fixed/',256)
+    '''crop into nodes from original .graph txt file and fix all node and edge list'''
+    #crop_to_gph('./data/supergph/','./data/crop_graph/', True)
+    dup_remove('./data/gph/','./data/dup/')
+    sort_latlon('./data/dup/','./data/sort/')
+    fix_nodes('./data/data/superimg/','./data/sort/','./data/nodes/',512)
 
 def fix_out_adj():
     '''merge binary output adjacency matrix and node attributes txt file into one 
@@ -458,11 +459,11 @@ def fix_out_adj():
                 s = str(adj[0]) + " " + str(adj[1]) + "\n"
                 f.write(s)
         
-def node_out_128():
+def node_out_128(inp_dir, out_dir, out_coor):
     '''exclude the 128 and -128 values from the node attribute txt files and 
     write new node attribute files'''
     
-    node_path = './data/nodes_fixed/'
+    node_path = inp_dir
     f = [f for f in listdir(node_path) if isfile(join(node_path, f))]
     #f = f[0:10]
     for i in f :
@@ -474,12 +475,12 @@ def node_out_128():
         graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
         nodes = np.asarray(ls_node)
 
-        wh_128 = np.where(nodes == 128.0 )
+        wh_128 = np.where(nodes == out_coor )
         wh_128 = list(wh_128[0])
-        wh_128n = np.where(nodes == -128.0 )
+        wh_128n = np.where(nodes == -out_coor )
         wh_128n = list(wh_128n[0])
 
-        full_list = wh_128 + wh_128n
+        full_list = list(set(wh_128) | set(wh_128n))  #union of two lists 
 
         for j in range(len(full_list)):
             graph.remove_n(full_list[j])
@@ -496,12 +497,13 @@ def node_out_128():
 
         #print(nodes,edges)
 
-        write_gph('./data/out_128/' + i, nodes, edges)
+        write_gph(out_dir + i, nodes, edges)
 
 
 if __name__ == "__main__":
-    #node_out_128()
-    fix_out_adj()
+    #crop_fix()
+    node_out_128('./data/nodes/', './data/graph/', 256.0)
+    #fix_out_adj()
     #num_array()
     #create_data('./data/img/','./data/out_128/','val',0.8)
     pass

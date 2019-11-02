@@ -157,8 +157,8 @@ class view_graph():
             graph = make_graph(ls_node, ls_edge, range(len(ls_node)))
             graph.show_graph()
     
-def view_normalize(path):
-    '''get path and view all graphs'''
+def view_normalize(path, size_check):
+    '''read graphs and normalize them'''
     f = [f for f in listdir(path) if isfile(join(path, f))]
     #f = f[0:2000]
     #print(f)
@@ -169,7 +169,7 @@ def view_normalize(path):
         gph = open(path + i, 'r')
         cont = gph.readlines()
         ls_node, ls_edge = gphtols_view(cont,False)
-        if np.asarray(ls_node).any() > 128 or np.asarray(ls_node).any() < -128 :
+        if np.asarray(ls_node).any() > size_check or np.asarray(ls_node).any() < -size_check :
             print(i)
         #ls_node, ls_edge = gphtols(cont)
         #node = make_gph(ls_node, ls_edge, range(len(ls_node)))
@@ -187,7 +187,7 @@ def view_normalize(path):
     #arr = arr+15000
     #shob = arr
     shob = np.asarray(shob)
-    np.save('./data/numpy_arrays/nodes_out_128.npy', shob)
+    np.save('./data/numpy_arrays/nodes_out.npy', shob)
     plt.hist(shob,bins=200)
     plt.show()
     qt = QuantileTransformer(output_distribution='normal')
@@ -198,7 +198,7 @@ def view_normalize(path):
     #shob = (shob-mean)/std
     #plt.hist(shob,bins=200)
     #plt.show()
-    new_data, a, b = change_range(shob,'out_128')
+    new_data, a, b = change_range(shob,'range')
     #first = (shob-mean)/std
     plt.hist(new_data,bins=200)
     plt.show()
@@ -379,9 +379,9 @@ def img_crop(inp_dir, out_dir, window):
                 cv2.imwrite(out_dir+str(name)+'_'+str(i)+'_'+str(j)+'.png', im)
 
 if __name__ == "__main__":
-    #view_normalize('./data/out_128/')
+    view_normalize('./data/graph/', 256.0)
     #view_graph('./data/graph/',False)
-    #view_gph('./data/nodes_fixed/')
+    
     #crop_to_gph('./data/data/supergph/','./data/gph/', False, './data/data/superimg/')
     #img_crop('./data/data/superimg/', './data/img/',512)
     #view_gph('./data/gph_data/')

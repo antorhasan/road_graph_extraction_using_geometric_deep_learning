@@ -20,14 +20,14 @@ def _int64_feature(value):
 
 
 def createDataRecord(out_filename, addrs_y, img_path, gph_path):
-    array = np.load('./data/numpy_arrays/nodes_out_128.npy')
+    array = np.load('./data/numpy_arrays/nodes_out.npy')
     qt = QuantileTransformer(output_distribution='normal')
     shob = qt.fit_transform(array)
 
     #mean = np.load('./data/numpy_arrays/fixed_node/mean.npy')
     #std = np.load('./data/numpy_arrays/fixed_node/std.npy')
-    a = np.load('./data/numpy_arrays/out_128/a.npy')
-    b = np.load('./data/numpy_arrays/out_128/b.npy')
+    a = np.load('./data/numpy_arrays/range/a.npy')
+    b = np.load('./data/numpy_arrays/range/b.npy')
 
     #an = np.load('./data/numpy_arrays/nodes/a.npy')
     #bn = np.load('./data/numpy_arrays/nodes/b.npy')
@@ -98,7 +98,7 @@ def create_data(img_path,gph_path,dataset,split):
     Args :
         - img_path : image directory
         - gph_path : graph directory
-        - dataset : 'train' or 'test'. Also, serves as tfrecord name
+        - dataset : 'train' or 'val'. Also, serves as tfrecord name
         - split : percentage to split into
     '''
     
@@ -502,8 +502,8 @@ def node_out_128(inp_dir, out_dir, out_coor):
 
 if __name__ == "__main__":
     #crop_fix()
-    node_out_128('./data/nodes/', './data/graph/', 256.0)
+    #node_out_128('./data/nodes/', './data/graph/', 256.0)
     #fix_out_adj()
     #num_array()
-    #create_data('./data/img/','./data/out_128/','val',0.8)
+    create_data('./data/img/','./data/graph/','val',0.8)
     pass

@@ -1,4 +1,5 @@
 import tensorflow as tf 
+import networkx as nx 
 #from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax, MaxPool2D
 import numpy as np
 import math
@@ -8,7 +9,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import SAGPooling, SAGEConv
+from torch_geometric.nn import dense_diff_pool
 import torch.optim as optim
+from torch_geometric.utils.sparse import dense_to_sparse
+from torch_geometric.utils import convert,to_dense_adj
+from torch_geometric.data import Data
 #from torch.nn.functional import c
 
 #tf.compat.v1.enable_eager_execution()
@@ -45,8 +50,11 @@ class Conv(nn.Module):
         self.conv4 = nn.Conv2d(128,256,3, padding=1)
         self.conv5 = nn.Conv2d(256,256,3, padding=1)
         
-        self.sagpool = SAGPooling(256, ratio=0.8,min_score=None)
-        self.sage = SAGEConv(256, 2, bias =False)
+        #self.sagpool = SAGPooling(256, ratio=0.8,min_score=None)
+        self.sage1 = SAGEConv(256, 128, bias =True)
+        self.sage2 = SAGEConv(256, 128, bias =False)
+
+        self.fc1 = nn.Linear(500, 10)
         #self.edge_idx = 
 
     def forward(self, inputs):
@@ -60,19 +68,29 @@ class Conv(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv5(x))
         x = F.max_pool2d(x, 2, 2)
-        #print(x.shape)
-        x = torch.reshape(x, (256,256))
+        #print(x)
+        org = torch.reshape(x, (256,256))
+
+        #print(x)
         edge = torch.Tensor(adj).long().t().contiguous().cuda()
 
-        x , edge, _ , _,_,_ = self.sagpool(x, edge)
-        print(x)
-        print(x.shape)
+        #x , edge, _ , _,_,_ = self.sagpool(x, edge)
+        #print(x)
+        #print(x.shape)
 
-        x = self.sage(x, edge)
+        x = self.sage1(org, edge)
 
+        s = self.sage2(org, edge)  #remember to change this and check
+        #s = torch.Tensor(s)
+        x = torch.reshape(x, (1,256,128))
 
-        print(x.shape)
-        print(x)
+        sparse_mat = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
+        sparse_mat = torch.reshape(sparse_mat, (1,256,256))
+
+        x, edge, _, _ = dense_diff_pool(x, sparse_mat, s)
+
+        print(x.shape,edge.shape)
+        
         print(asd)
         #print(edge.shape)
         #print(asd)

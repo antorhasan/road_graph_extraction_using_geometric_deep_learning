@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import SAGPooling, SAGEConv
+import torch.optim as optim
 #from torch.nn.functional import c
 
 #tf.compat.v1.enable_eager_execution()
@@ -44,8 +45,8 @@ class Conv(nn.Module):
         self.conv4 = nn.Conv2d(128,256,3, padding=1)
         self.conv5 = nn.Conv2d(256,256,3, padding=1)
         
-        self.sagpool = SAGPooling(256, ratio=0.8)
-        self.sage = SAGEConv(205, 2)
+        self.sagpool = SAGPooling(256, ratio=0.8,min_score=None)
+        self.sage = SAGEConv(256, 2, bias =False)
         #self.edge_idx = 
 
     def forward(self, inputs):
@@ -64,12 +65,18 @@ class Conv(nn.Module):
         edge = torch.Tensor(adj).long().t().contiguous().cuda()
 
         x , edge, _ , _,_,_ = self.sagpool(x, edge)
-        x = self.sage(x.t(), edge)
+        print(x)
+        print(x.shape)
+
+        x = self.sage(x, edge)
+
 
         print(x.shape)
-        print(edge.shape)
+        print(x)
         print(asd)
-        return x
+        #print(edge.shape)
+        #print(asd)
+        return x, edge
 
 
 def loss_object(node_attr_lab, adj_mat_lab, node_attr_pred, adj_mat_pred):
@@ -106,11 +113,11 @@ def loss_object(node_attr_lab, adj_mat_lab, node_attr_pred, adj_mat_pred):
     return node_loss,adj_loss,total
 
 #@tf.function
-def train_step(images, node_attr_lab, adj_mat_lab, dim):
+def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer):
 
     model.train()
-    
-    node_features = model(images)
+    optimizer.zero_grad()
+    node_features, edge = model(images)
 
     #num_nodes = 156
 
@@ -124,7 +131,9 @@ def train_step(images, node_attr_lab, adj_mat_lab, dim):
     #pred_dim = np.asscalar(pred_dim)
     #pred_dim = pred_dim.item()
     #pred_dim = pred_dim.tolist()
-    pred_dim = 156
+    pred_dim = node_features.shape[0]
+    print(pred_dim)
+    print(asd)
     
     if pred_dim > dim :
 
@@ -156,16 +165,15 @@ def train_step(images, node_attr_lab, adj_mat_lab, dim):
     
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-#dataset = dataset.shuffle(4000)
-#dataset = dataset.batch(1)
+#dataset = dataset.shuffle(Metropoliss`
+#dataset = dataset.batch(1)Metropolis
 
 #model = model()
 #model = model.sav()
 #model.load_weights('./data/model/weight.h5')
 #model.save('./data/model/',save_format='h5')
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=.001)
-#train_loss = tf.keras.metrics.Sum()
+
 
 EPOCHS = 2
 coun = 0
@@ -181,6 +189,7 @@ use_cuda = not False and torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
 
 model = Conv().to(device)
+optimizer = optim.Adam(model.parameters(), lr=.0001)
 
 for epoch in range(EPOCHS):
     for i,n,a in dataset:
@@ -196,7 +205,7 @@ for epoch in range(EPOCHS):
         #print(i,node_features,a)
         #print(i,j,k,l)
         #metric = train_step(i,j,k,l,dim)
-        metric, node_loss, adj_loss = train_step(i,n,a,dim)
+        metric, node_loss, adj_loss = train_step(i,n,a,dim, optimizer)
 
         run_t = run_t + metric/2000
         run_nod = run_nod + node_loss/2000

@@ -40,6 +40,36 @@ def _parse_function(example_proto):
     return image_y, gph_nodes, gph_adj
 
 
+class Bonv(nn.Module):
+
+    def __init__(self):
+        super(Bonv, self).__init__()
+
+        self.sage1 = SAGEConv(2,2, bias= True)
+        self.sage2 = SAGEConv(2,128, bias= True)
+
+        self.fc1 = nn.Linear(256, 128)
+
+    def forward(self, nodes, adjs):
+        #print(nodes,adjs)
+
+        edge, _ = dense_to_sparse(adjs)
+        x = self.sage1(nodes, edge)
+        s = self.sage2(nodes, edge)
+        
+        x, edge, _, _ = dense_diff_pool(x, adjs, s)
+
+        x = torch.tanh(x)
+        x = torch.reshape(x, (128,2))
+        edge = torch.reshape(edge, (128,128))
+
+        x = x.reshape(-1)
+        x = self.fc1(x)
+        #print(x.shape, edge.shape)
+        #print(asd)
+        return x
+
+
 
 class Conv(nn.Module):
     def __init__(self):
@@ -51,10 +81,11 @@ class Conv(nn.Module):
         self.conv5 = nn.Conv2d(256,256,3, padding=1)
         
         #self.sagpool = SAGPooling(256, ratio=0.8,min_score=None)
-        self.sage1 = SAGEConv(256, 128, bias =True)
-        self.sage2 = SAGEConv(256, 128, bias =False)
+        self.sage1 = SAGEConv(256, 2, bias =True)
+        self.sage2 = SAGEConv(256, 128, bias =True)
+        #self.sage3 = SAGEConv(128, 2, bias =True)
 
-        self.fc1 = nn.Linear(500, 10)
+        self.fc1 = nn.Linear(256, 128)
         #self.edge_idx = 
 
     def forward(self, inputs):
@@ -82,108 +113,50 @@ class Conv(nn.Module):
 
         s = self.sage2(org, edge)  #remember to change this and check
         #s = torch.Tensor(s)
-        x = torch.reshape(x, (1,256,128))
+        x = torch.reshape(x, (1,256,2))
 
         sparse_mat = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
         sparse_mat = torch.reshape(sparse_mat, (1,256,256))
 
         x, edge, _, _ = dense_diff_pool(x, sparse_mat, s)
-
-        print(x.shape,edge.shape)
+        x = torch.tanh(x)
+        nodes_out = torch.reshape(x, (128,2))
+        edge = torch.reshape(edge, (128,128))
+        edge = torch.sigmoid(edge)
+        edge = torch.where(edge >= 0.5, torch.ones(128,128).cuda(), torch.zeros(128,128).cuda())
+        #print(128 - (edge == 0).sum(dim=1))
         
-        print(asd)
-        #print(edge.shape)
-        #print(asd)
-        return x, edge
+        #x = self.sage3(x, edge)
 
+        x = nodes_out.reshape(-1)
+        x = self.fc1(x)
 
-def loss_object(node_attr_lab, adj_mat_lab, node_attr_pred, adj_mat_pred):
+        #print(x.shape)
+        
+        return x, nodes_out, edge
 
-    node_loss = tf.reduce_mean(tf.keras.losses.mse(node_attr_lab, node_attr_pred))
-    #adj_loss = -0.6*tf.reduce_mean(tf.math.multiply(adj_mat_lab,tf.math.log(adj_mat_pred)))-(1-0.6)*tf.reduce_mean(tf.math.multiply((1-adj_mat_lab),tf.math.log(1-adj_mat_pred)))
-    #num_loss = 4*tf.reduce_mean(tf.keras.losses.mse(node_num_lab, node_num_pred))
-
-    """ #print(node_attr_pred)
-    node_attr_pred = (((node_attr_pred - node_b)/node_a)*node_std)+node_mean
-    node_attr_lab = (((node_attr_lab - node_b)/node_a)*node_std)+node_mean
-    #print(node_attr_pred)
-    node_attr_pred = tf.where(node_attr_pred > 128, 128.0, node_attr_pred)
-    node_attr_pred = tf.where(node_attr_pred < -128, -128.0, node_attr_pred)
-    #print(node_attr_pred)
-
-    node_p = np.zeros((256,256))
-    rows_p = tf.dtypes.cast(node_attr_pred[:,1],dtype=tf.int32)
-    columns_p = tf.dtypes.cast(node_attr_pred[:,0],dtype=tf.int32)
-    node_p[rows_p,columns_p] = 1.0
-    node_attr_pred = tf.dtypes.cast(node_p, tf.float32)
-    node_attr_pred = tf.nn.softmax(node_attr_pred)
-
-    node_l = np.zeros((256,256))
-    rows_l = tf.dtypes.cast(node_attr_lab[:,1],dtype=tf.int32)
-    columns_l = tf.dtypes.cast(node_attr_lab[:,0],dtype=tf.int32)
-    node_l[rows_l,columns_l] = 1.0
-    node_attr_lab = tf.dtypes.cast(node_l, tf.float32)
-    node_attr_lab = tf.nn.softmax(node_attr_lab) """
-
-    #node_loss = tf.compat.v1.losses.absolute_difference(node_attr_lab, node_attr_pred)
-    adj_loss = tf.compat.v1.losses.absolute_difference(adj_mat_lab, adj_mat_pred)
-    total = node_loss+adj_loss
-    return node_loss,adj_loss,total
 
 #@tf.function
-def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer):
+def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer,boptim):
 
     model.train()
     optimizer.zero_grad()
-    node_features, edge = model(images)
+    pred_node_embd, nodes_out, edges_out = model(images)
 
-    #num_nodes = 156
+    bmodel.train()
+    boptim.zero_grad()
+    gt_node_embd = bmodel(node_attr_lab, adj_mat_lab)
 
-    #pred_dim = (num_nodes-num_b)/num_a
-    #pred_dim = tf.math.exp(pred_dim)
-    #pred_dim = np.array(pred_dim)
-    #print(pred_dim.shape)
-    #pred_dim = pred_dim.item()
-    #pred_dim = list(pred_dim)
-    #pred_dim = pred_dim.numpy()
-    #pred_dim = np.asscalar(pred_dim)
-    #pred_dim = pred_dim.item()
-    #pred_dim = pred_dim.tolist()
-    pred_dim = node_features.shape[0]
-    print(pred_dim)
-    print(asd)
-    
-    if pred_dim > dim :
+    loss = F.l1_loss(pred_node_embd, gt_node_embd)
+    loss.backward()
+    optimizer.step()
+    boptim.step()
 
-        paddings_adj = tf.constant([[0, pred_dim - dim], [0, pred_dim - dim]])
-        adj_mat_lab = tf.pad(adj_mat_lab, paddings_adj, "CONSTANT")
-
-        paddings_node = tf.constant([[0, pred_dim - dim], [0, 0]])
-        node_attr_lab = tf.pad(node_attr_lab, paddings_node, "CONSTANT")
-
-        new_adj = new_adj[0:pred_dim,0:pred_dim]
-        node_features = node_features[0:pred_dim,:]
-
-    elif pred_dim < dim :
-        new_adj = new_adj[0:dim,0:dim]
-        node_features = node_features[0:dim,:]
-
-    elif pred_dim == dim :
-        new_adj = new_adj[0:pred_dim,0:pred_dim]
-        node_features = node_features[0:pred_dim,:]
-
-
-    node_loss, adj_loss, total = loss_object(node_attr_lab, adj_mat_lab, node_features, new_adj)
-    #train_loss.update_state([node_loss, adj_loss, num_loss])
-    gradients = tape.gradient(total, model.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-    #return total
-    return total,node_loss, adj_loss
+    return loss, nodes_out, edges_out
     
 dataset = tf.data.TFRecordDataset('./data/record/train.tfrecords')
 dataset = dataset.map(_parse_function)
-#dataset = dataset.shuffle(Metropoliss`
+dataset = dataset.shuffle(3500)
 #dataset = dataset.batch(1)Metropolis
 
 #model = model()
@@ -193,7 +166,7 @@ dataset = dataset.map(_parse_function)
 
 
 
-EPOCHS = 2
+EPOCHS = 15
 coun = 0
 run_t = 0
 run_nod = 0
@@ -209,6 +182,15 @@ device = torch.device("cuda" if use_cuda else "cpu")
 model = Conv().to(device)
 optimizer = optim.Adam(model.parameters(), lr=.0001)
 
+bmodel = Bonv().to(device)
+boptim = optim.Adam(bmodel.parameters(), lr=.0001)
+""" 
+checkpoint = torch.load('./data/model/torch1.pt')
+model.load_state_dict(checkpoint['model_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+bmodel.load_state_dict(checkpoint['bmodel_state_dict'])
+boptim.load_state_dict(checkpoint['boptim_state_dict']) """
+
 for epoch in range(EPOCHS):
     for i,n,a in dataset:
         dim = int(math.sqrt(int(a.shape[0])))
@@ -220,31 +202,67 @@ for epoch in range(EPOCHS):
         n = torch.Tensor(n).cuda()
         a = torch.Tensor(a).cuda()
 
-        #print(i,node_features,a)
-        #print(i,j,k,l)
-        #metric = train_step(i,j,k,l,dim)
-        metric, node_loss, adj_loss = train_step(i,n,a,dim, optimizer)
+        metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer, boptim)
 
         run_t = run_t + metric/2000
-        run_nod = run_nod + node_loss/2000
-        run_adj = run_adj + adj_loss/2000
+        #run_nod = run_nod + node_loss/2000
+        #run_adj = run_adj + adj_loss/2000
         #run_num = run_num + num_loss/2000
         coun+=1
         if coun%2000==0 :
-            template = 'Epoch {}, Loss: {}, nod_Loss: {}, adj_Loss: {} '
+            template = 'Epoch {}, Loss: {} '
             #print(template.format(epoch+1,metric, nod e_loss, adj_loss, num_loss))
-            print(template.format(epoch+1,run_t, run_nod, run_adj))
+            print(template.format(epoch+1,run_t))
             run_t = 0
-            run_nod = 0
-            run_adj = 0
+            #run_nod = 0
+            #run_adj = 0
             #run_num = 0
             #`break
 
-    model.save_weights('./data/model/weight_out_128.h5')
+    #model.save_weights('./data/model/weight_out_128.h5')
     #model.load_weights('./data/model/weight.h5')
     #model.save_weights('./data/model/weight_softmax.h5')
+    torch.save({
+            'model_state_dict': model.state_dict(),
+            'bmodel_state_dict': bmodel.state_dict,
+            'optimizer_state_dict': optimizer.state_dict(),
+            'boptim_state_dict': boptim.state_dict(),
+            }, './data/model/torch1.pt')
+
+counter = 0
+for i,n,a in dataset:
+    print(counter)
+    dim = int(math.sqrt(int(a.shape[0])))
+    i = np.reshape(i, (1,3,512,512))
+    n = np.reshape(n, (dim,2))
+    a = np.reshape(a, (dim,dim))
+
+    i = torch.Tensor(i).cuda()
+    n = torch.Tensor(n).cuda()
+    a = torch.Tensor(a).cuda()
+
+    metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer, boptim)
+    node_features = nodes_out.cpu().detach().numpy()
+    new_adj = edges_out.cpu().detach().numpy()
+    i = i.cpu().detach().numpy()
+
+    node_features = (node_features - node_b)/node_a
+    node_features = qt.inverse_transform(node_features)
+
+    #new_adj = np.where(new_adj>.5, 1.0 , 0)
+    np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
+    np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)
+    image = i*255.0
+    image = np.reshape(image,(512,512,3))
+    image = np.asarray(image, dtype=np.uint8)
+
+    cv2.imwrite('./data/output/img'+str(counter)+'.png',image)
+    counter += 1
+    if counter == 6 :
+        break
 
 
+print(asd)
 dataset_test = tf.data.TFRecordDataset('./data/record/val.tfrecords')
 dataset_test = dataset_test.map(_parse_function)
 #dataset_test = dataset_test.shuffle(6000)

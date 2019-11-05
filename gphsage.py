@@ -187,7 +187,7 @@ dataset = dataset.shuffle(1000)
 
 
 
-EPOCHS = 2
+EPOCHS = 3
 coun = 0
 run_t = 0
 run_nod = 0

@@ -3,6 +3,7 @@ env/
 env2/
 data/
 env3/
+data0/
 #*.txt
 *.png
 # Byte-compiled / optimized / DLL files

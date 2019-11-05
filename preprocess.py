@@ -500,10 +500,77 @@ def node_out_128(inp_dir, out_dir, out_coor):
         write_gph(out_dir + i, nodes, edges)
 
 
+def gen_dense_adj(size, path):
+    '''creates a adjacency matrix of a definite size where, 
+    every node is connected to it's neighbouring ones like an image'''
+
+    img = np.zeros((size,size))
+
+    #coor = []
+
+    pre_list = []
+    temp = []
+    #print(img.shape[0])
+    for i in range(img.shape[0]*img.shape[1]):
+        temp.append(i)
+        #print(temp)
+        j = i +1 
+        #print(j % 5)
+        if j % img.shape[0] == 0:
+            pre_list.append(temp)
+            temp = []
+    new = []
+    for i in range(len(pre_list)):
+        temp = []
+        for j in range(len(pre_list)):
+            if j == 0 :
+                temp.append([pre_list[i][j],pre_list[i][j+1]])
+            elif j == len(pre_list)-1:
+                temp.append([pre_list[i][j-1],pre_list[i][j]])
+            else :
+                temp.append([pre_list[i][j-1],pre_list[i][j],pre_list[i][j+1]])
+        new.append(temp)
+        temp = []
+
+    final = []
+    #print(new)
+    coun = 0
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            temp = []
+            if i == 0 :
+                one = new[i][j]
+                two = new[i+1][j]
+                temp.append(one+two)
+
+            elif i == img.shape[0] -1 :
+                one = new[i-1][j]
+                two = new[i][j]
+                temp.append(one+two)
+
+            else :
+                one = new[i-1][j]
+                two = new[i][j]
+                three = new[i+1][j]
+                temp.append(one+two+three)
+            
+            temp = [item for sublist in temp for item in sublist]
+            
+            temp.remove(coun)
+            #print(temp)
+            for k in range(len(temp)):
+                final.append([coun,temp[k]])
+
+            coun += 1
+
+    print(final)
+    np.save(path, final)
+
+
 if __name__ == "__main__":
     #crop_fix()
     #node_out_128('./data/nodes/', './data/graph/', 256.0)
-    #fix_out_adj()
+    fix_out_adj()
     #num_array()
-    create_data('./data/img/','./data/graph/','val',0.8)
+    #create_data('./data/img/','./data/graph/','val',0.8)
     pass

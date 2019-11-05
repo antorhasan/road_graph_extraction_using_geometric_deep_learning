@@ -379,8 +379,8 @@ def img_crop(inp_dir, out_dir, window):
                 cv2.imwrite(out_dir+str(name)+'_'+str(i)+'_'+str(j)+'.png', im)
 
 if __name__ == "__main__":
-    view_normalize('./data/graph/', 256.0)
-    #view_graph('./data/graph/',False)
+    #view_normalize('./data/graph/', 256.0)
+    view_graph('./data/output/output/',False)
     
     #crop_to_gph('./data/data/supergph/','./data/gph/', False, './data/data/superimg/')
     #img_crop('./data/data/superimg/', './data/img/',512)

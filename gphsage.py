@@ -1,6 +1,5 @@
 import tensorflow as tf 
 import networkx as nx 
-#from tensorflow.keras.layers import Conv2D, Flatten, Dense, Softmax, MaxPool2D
 import numpy as np
 import math
 import cv2
@@ -21,7 +20,7 @@ from torch_geometric.data import Data
 node_a = np.load('./data/numpy_arrays/range/a.npy')
 node_b = np.load('./data/numpy_arrays/range/b.npy')
 
-adj = np.load('./data/numpy_arrays/adj.npy')
+ori_adjacen = np.load('./data/numpy_arrays/adj.npy')
 
 def _parse_function(example_proto):
 
@@ -61,21 +60,14 @@ class Bonv(nn.Module):
         for i in range(edge.size(0)):
             edge[i,:] = torch.where(edge[i,:] == torch.max(edge[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
 
-        #edge = torch.sigmoid(edge)
-        #edge = torch.where(edge >= 0.5, torch.ones(128,128).cuda(), torch.zeros(128,128).cuda())
-        
         edge, _ = dense_to_sparse(edge)
-        #print(x_out.shape,edge.shape)
-        #print(asd)
         x = self.sage3(x_out, edge)
         
+
+
+
         x = torch.reshape(x, (128,))
 
-        #x = x.reshape(-1)
-        #x = self.fc1(x)
-        #print(x.shape, edge.shape)
-        #print(x)
-        #print(asd)
         return x, edge, link_loss, ent_loss,x_out
 
 
@@ -89,11 +81,13 @@ class Conv(nn.Module):
         self.conv5 = nn.Conv2d(256,256,3, padding=1)
         
         #self.sagpool = SAGPooling(256, ratio=0.8,min_score=None)
-        self.sage1 = SAGEConv(256, 2, bias =True)
-        self.sage2 = SAGEConv(256, 128, bias =True)
-        self.sage3 = SAGEConv(2, 1, bias =True)
+        self.sage1 = SAGEConv(256, 100, bias =True, normalize=False)
+        self.sage2 = SAGEConv(256, 128, bias =True, normalize=False)
+        self.sage3 = SAGEConv(100, 2, bias =True, normalize=False)
 
-        self.fc1 = nn.Linear(128, 128)
+        self.sage4 = SAGEConv(128, 128, bias =True, normalize=False)
+        self.sage5 = SAGEConv(1, 1, bias =True, normalize=False)
+        #self.fc1 = nn.Linear(128, 128)
         #self.edge_idx = 
 
     def forward(self, inputs):
@@ -110,17 +104,10 @@ class Conv(nn.Module):
         #print(x)
         org = torch.reshape(x, (256,256))
 
-        #print(x)
-        edge = torch.Tensor(adj).long().t().contiguous().cuda()
-
-        #x , edge, _ , _,_,_ = self.sagpool(x, edge)
-        #print(x)
-        #print(x.shape)
+        edge = torch.Tensor(ori_adjacen).long().t().contiguous().cuda()
 
         x = self.sage1(org, edge)
-
-        s = self.sage2(org, edge)  #remember to change this and check
-        #s = torch.Tensor(s)
+        s = self.sage2(org, edge)
         x = torch.reshape(x, (1,256,2))
 
         sparse_mat = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
@@ -128,50 +115,37 @@ class Conv(nn.Module):
 
         x, edge, link_loss, ent_loss = dense_diff_pool(x, sparse_mat, s)
         x = torch.tanh(x)
-        #print(x.shape)
-        nodes_out = torch.reshape(x, (128,2))
-        x = nodes_out
+        
+        x = torch.reshape(x, (128,2))
+        
         edge = torch.reshape(edge, (128,128))
         for i in range(edge.size(0)):
             edge[i,:] = torch.where(edge[i,:] == torch.max(edge[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
-        #edge = torch.sigmoid(edge)
-        #edge_out = torch.where(edge >= 0.5, torch.ones(128,128).cuda(), torch.zeros(128,128).cuda())
+        
         edge_out = edge
         edge, _ = dense_to_sparse(edge)
-        
+        nodes_out = x
         x = self.sage3(x, edge)
+        
+
 
         x = x.reshape(-1)
         #print(x.shape)
-        x = self.fc1(x)
+        #x = self.fc1(x)
 
         #print(x.shape,nodes_out.shape)
+        #print(edge_out)
         #print(asd)
         
-        return x, link_loss, ent_loss, nodes_out, edge_out
+        return x, link_loss, ent_loss, nodes_out, edge_out, edge
 
 def embd_loss(edge_idx, z, x):
     EPS = 1e-8 
     row, col = edge_idx
-    #print(z.shape,x.shape)
-    #print(z)
-    #print(z[0],z[1])
     loss_pos = - torch.log((z[row] * z[col]).sum(dim=-1).sigmoid() + EPS).mean()
-    #col_neg = torch.randint(0, x.size(0),(row.size(0),),dtype=torch.long, device=row.device)
     col_neg = torch.randint(x.size(0), (row.size(0), ), dtype=torch.long, device=row.device)
-    #col_neg = negative_sampling(edge_idx)
-    #print(col_neg.shape)
-    #print(asd)
-    #print(col_neg,row.shape)
-    #print(z)
-    #print(col_neg,col_neg.shape)
-
-    #print(asd)
     loss_neg = - torch.log((-(z[row] * z[col_neg])).sum(dim=-1).sigmoid() + EPS).mean()
-    #print(loss_neg)
     loss = loss_pos + loss_neg
-    #print(loss)
-    #print(asd)
     return loss
 
 #@tf.function
@@ -179,15 +153,16 @@ def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer,boptim):
 
     model.train()
     optimizer.zero_grad()
-    pred_node_embd, lnk_loss1, ent_loss1, nodes_out, edges_out = model(images)
+    pred_node_embd, lnk_loss1, ent_loss1, nodes_out, edges_out, edges_dense = model(images)
 
     bmodel.train()
     boptim.zero_grad()
     gt_node_embd, edge_gt, lnk_loss2, ent_loss2, x_out = bmodel(node_attr_lab, adj_mat_lab)
 
     emb_loss = embd_loss(edge_gt, gt_node_embd, x_out)
+    emb_loss1 = embd_loss(edges_dense, pred_node_embd, nodes_out)
 
-    loss = F.l1_loss(pred_node_embd, gt_node_embd) + lnk_loss1 + lnk_loss2 + ent_loss1 + ent_loss2 + emb_loss
+    loss = F.l1_loss(pred_node_embd, gt_node_embd) + lnk_loss1 + lnk_loss2 + ent_loss1 + ent_loss2 + emb_loss + emb_loss1
     loss.backward()
     optimizer.step()
     boptim.step()
@@ -206,7 +181,7 @@ dataset = dataset.shuffle(1000)
 
 
 
-EPOCHS = 2
+EPOCHS = 5
 coun = 0
 run_t = 0
 run_nod = 0

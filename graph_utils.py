@@ -13,7 +13,6 @@ from sklearn.preprocessing import QuantileTransformer
 #tf.enable_eager_execution()
 
 
-
 def change_range(data,folder):
     newmin = -1
     newmax = 1
@@ -209,29 +208,6 @@ def view_normalize(path, size_check):
     plt.hist(last,bins=200)
     plt.show() """
 
-""" 
-class create_gph():
-    '''a graph is visualized from nodes,edges and position'''
-    
-    def __init__(self, nodes, edges, index):
-        G = nx.Graph()
-        counter = 0
-        for i in index:
-            G.add_node(i,coor=nodes[counter])
-            counter += 1
-
-        for i in range(len(edges)):
-            G.add_edge(*edges[i])
-        self.graph = G 
-
-    def get_num_nodes(self):
-        '''returns the number of nodes of the graph'''
-        return self.graph.number_of_nodes()
-
-    def get_adj(self):
-        '''returns the adjacency matrix of the graph'''
-        A = nx.adjacency_matrix(self.graph)
-        return A.todense() """
 
 class make_graph():
     '''create a networkx graph object. methods include : plot the graph

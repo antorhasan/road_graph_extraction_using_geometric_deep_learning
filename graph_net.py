@@ -187,7 +187,7 @@ dataset = dataset.shuffle(1000)
 
 
 
-EPOCHS = 3
+EPOCHS = 10
 coun = 0
 run_t = 0
 run_nod = 0
@@ -250,37 +250,37 @@ for epoch in range(EPOCHS):
             'boptim_state_dict': boptim.state_dict(),
             }, './data/model/torch1.pt')
 
-counter = 0
-for i,n,a in dataset:
-    print(counter)
-    dim = int(math.sqrt(int(a.shape[0])))
-    i = np.reshape(i, (1,3,512,512))
-    n = np.reshape(n, (dim,2))
-    a = np.reshape(a, (dim,dim))
+    counter = 0
+    for i,n,a in dataset:
+        print(counter)
+        dim = int(math.sqrt(int(a.shape[0])))
+        i = np.reshape(i, (1,3,512,512))
+        n = np.reshape(n, (dim,2))
+        a = np.reshape(a, (dim,dim))
 
-    i = torch.Tensor(i).cuda()
-    n = torch.Tensor(n).cuda()
-    a = torch.Tensor(a).cuda()
+        i = torch.Tensor(i).cuda()
+        n = torch.Tensor(n).cuda()
+        a = torch.Tensor(a).cuda()
 
-    metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer, boptim)
-    node_features = nodes_out.cpu().detach().numpy()
-    new_adj = edges_out.cpu().detach().numpy()
-    i = i.cpu().detach().numpy()
+        metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer, boptim)
+        node_features = nodes_out.cpu().detach().numpy()
+        new_adj = edges_out.cpu().detach().numpy()
+        i = i.cpu().detach().numpy()
 
-    node_features = (node_features - node_b)/node_a
-    node_features = qt.inverse_transform(node_features)
+        node_features = (node_features - node_b)/node_a
+        node_features = qt.inverse_transform(node_features)
 
-    #new_adj = np.where(new_adj>.5, 1.0 , 0)
-    np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
-    np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)
-    image = i*255.0
-    image = np.reshape(image,(512,512,3))
-    image = np.asarray(image, dtype=np.uint8)
+        #new_adj = np.where(new_adj>.5, 1.0 , 0)
+        np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
+        np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)
+        image = i*255.0
+        image = np.reshape(image,(512,512,3))
+        image = np.asarray(image, dtype=np.uint8)
 
-    cv2.imwrite('./data/output/img'+str(counter)+'.png',image)
-    counter += 1
-    if counter == 6 :
-        break
+        cv2.imwrite('./data/output/img'+str(counter)+'.png',image)
+        counter += 1
+        if counter == 6 :
+            break
 
 
 print(asd)

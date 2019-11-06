@@ -6,7 +6,7 @@ import cv2
 import scipy as sp
 import numpy as np
 import tensorflow as tf
-from util import gphtols_view, crop_gph_256
+from utility import gphtols_view, crop_gph_256
 from sklearn.preprocessing import QuantileTransformer
 
 
@@ -356,8 +356,16 @@ def img_crop(inp_dir, out_dir, window):
 
 if __name__ == "__main__":
     #view_normalize('./data/graph/', 256.0)
-    view_graph('./data/output/output/',False)
-    
+    #view_graph('./data/graph/',False)
+    #print(asd)
+    arr = np.zeros((512,512,2))
+    for i in range(512):
+        for j in range(512):
+            arr[i,j,0] = -255.5 + (1.0*j)
+            arr[i,j,1] =  255.5 - (1.0*i)
+
+    print(arr.shape)
+    np.save('./data/numpy_arrays/mask_co.npy', arr)
     #crop_to_gph('./data/data/supergph/','./data/gph/', False, './data/data/superimg/')
     #img_crop('./data/data/superimg/', './data/img/',512)
     #view_gph('./data/gph_data/')

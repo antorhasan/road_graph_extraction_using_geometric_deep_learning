@@ -6,9 +6,9 @@ import tensorflow as tf
 from os import listdir
 from os.path import isfile, join
 import matplotlib.pyplot as plt
-from util import gphtols_view
-from new import make_graph
-from util import write_gph
+from utility import gphtols_view
+from graph_utils import make_graph
+from utility import write_gph
 import networkx as nx
 from sklearn.preprocessing import QuantileTransformer
 
@@ -573,4 +573,5 @@ if __name__ == "__main__":
     fix_out_adj()
     #num_array()
     #create_data('./data/img/','./data/graph/','val',0.8)
+    
     pass

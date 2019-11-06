@@ -44,18 +44,50 @@ class Bonv(nn.Module):
     def __init__(self):
         super(Bonv, self).__init__()
 
-        self.sage1 = SAGEConv(2,128, bias= True)
-        #self.sage2 = SAGEConv(2,128, bias= True)
-        #self.sage3 = SAGEConv(2,1, bias= True)
+        self.sage1 = SAGEConv(2, 128, bias =True, normalize=True)
+        self.sage2 = SAGEConv(2, 128, bias =True, normalize=True)
+        self.sage3 = SAGEConv(128, 2, bias =True, normalize=True)
+
+        self.sage4 = SAGEConv(2, 128, bias =True, normalize=True)
         #self.fc1 = nn.Linear(256, 128)
 
     def forward(self, nodes, adjs):
         edge, _ = dense_to_sparse(adjs)
         x = self.sage1(nodes, edge)
-        s = torch.ones(1,nodes.size(0),1).cuda()
-        x, edge, link_loss, ent_loss = dense_diff_pool(x, adjs, s)
+        s = self.sage2(nodes, edge)
+        s = torch.reshape(s, (1,nodes.size(0),128))
+        
+        x = torch.reshape(x, (1,nodes.size(0),128))
 
+        adjs = torch.reshape(adjs, (1,nodes.size(0),nodes.size(0)))
+
+        x, edge, link_loss1, ent_loss1 = dense_diff_pool(x, adjs, s)
+
+        x = torch.reshape(x, (128,128))
+        
+        edge = torch.reshape(edge, (128,128))
+        #for i in range(edge.size(0)):
+        #    edge[i,:] = torch.where(edge[i,:] == torch.max(edge[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
+        
+        edge_out = edge
+        edge, _ = dense_to_sparse(edge)
+        #nodes_out = x
+        x = self.sage3(x, edge)
+        nodes_out = torch.tanh(x)
+
+        #x = self.sage4(nodes_out, edge)
+
+        edge = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
+        edge = torch.reshape(edge, (1,128,128))
+
+        x = torch.reshape(x, (1,128,2))
+
+        s = torch.ones(1,128,1).cuda()
+        x, edge, link_loss2, ent_loss2 = dense_diff_pool(x, edge, s)
+    
         x = x.reshape(-1)
+        link_loss = link_loss1 + link_loss2
+        ent_loss = ent_loss1 + ent_loss2
         #print(x.shape, edge.shape)
         #print(asd)
         """ x_out = torch.reshape(x, (128,2))
@@ -66,24 +98,24 @@ class Bonv(nn.Module):
         x = self.sage3(x_out, edge)
         x = torch.reshape(x, (128,)) """
 
-        return x, edge, link_loss, ent_loss
+        return x, link_loss, ent_loss, nodes_out, edge_out
 
 
 class Conv(nn.Module):
     def __init__(self):
         super(Conv, self).__init__()
-        self.conv1 = nn.Conv2d(3,32,3, padding=1)
+        self.conv1 = nn.Conv2d(5,32,3, padding=1)
         self.conv2 = nn.Conv2d(32,64,3, padding=1)
         self.conv3 = nn.Conv2d(64,128,3, padding=1)
         self.conv4 = nn.Conv2d(128,256,3, padding=1)
         self.conv5 = nn.Conv2d(256,256,3, padding=1)
         
         #self.sagpool = SAGPooling(256, ratio=0.8,min_score=None)
-        self.sage1 = SAGEConv(256, 128, bias =True, normalize=False)
-        self.sage2 = SAGEConv(256, 128, bias =True, normalize=False)
-        self.sage3 = SAGEConv(128, 2, bias =True, normalize=False)
+        self.sage1 = SAGEConv(256, 128, bias =True, normalize=True)
+        self.sage2 = SAGEConv(256, 128, bias =True, normalize=True)
+        self.sage3 = SAGEConv(128, 2, bias =True, normalize=True)
 
-        self.sage4 = SAGEConv(2, 128, bias =True, normalize=False)
+        #self.sage4 = SAGEConv(2, 128, bias =True, normalize=True)
         #self.sage5 = SAGEConv(2, 1, bias =True, normalize=False)
         #self.fc1 = nn.Linear(128, 128)
         #self.edge_idx = 
@@ -119,21 +151,24 @@ class Conv(nn.Module):
         x = torch.reshape(x, (128,128))
         
         edge = torch.reshape(edge, (128,128))
-        for i in range(edge.size(0)):
-            edge[i,:] = torch.where(edge[i,:] == torch.max(edge[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
-        
         edge_out = edge
+        for i in range(edge_out.size(0)):
+            edge_out[i,:] = torch.where(edge_out[i,:] == torch.max(edge_out[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
+        
         edge, _ = dense_to_sparse(edge)
         #nodes_out = x
         x = self.sage3(x, edge)
         nodes_out = torch.tanh(x)
-
-        x = self.sage4(nodes_out, edge)
+        x = nodes_out
+        #x = self.sage4(nodes_out, edge)
+        edge_dense = edge
 
         edge = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
+        #print(edge)
+        #print(asd)
         edge = torch.reshape(edge, (1,128,128))
 
-        x = torch.reshape(x, (1,128,128))
+        x = torch.reshape(x, (1,128,2))
 
         s = torch.ones(1,128,1).cuda()
         x, edge, link_loss2, ent_loss2 = dense_diff_pool(x, edge, s)
@@ -143,7 +178,7 @@ class Conv(nn.Module):
         link_loss = link_loss1 + link_loss2
         ent_loss = ent_loss1 + ent_loss2
         
-        return x, link_loss, ent_loss, nodes_out, edge_out
+        return x, link_loss, ent_loss, nodes_out, edge_out, edge_dense
 
 def embd_loss(edge_idx, z):
     edge_idx, _ = dense_to_sparse(edge_idx)
@@ -156,19 +191,20 @@ def embd_loss(edge_idx, z):
     return loss
 
 #@tf.function
-def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer,boptim):
+def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer):
 
     model.train()
     optimizer.zero_grad()
-    pred_node_embd, lnk_loss1, entro_loss1, nodes_out, edges_out = model(images)
-    emb_loss1 = embd_loss(edges_out, nodes_out)
+    pred_node_embd, lnk_loss1, entro_loss1, nodes_out, edges_out, edge_dense = model(images)
+    emb_loss1 = embd_loss(edge_dense, nodes_out)
 
     bmodel.train()
     boptim.zero_grad()
-    gt_node_embd, edge_gt, lnk_loss2, entro_loss2 = bmodel(node_attr_lab, adj_mat_lab)
+    gt_node_embd, lnk_loss2, entro_loss2, gt_nodes_out, gt_edges_out = bmodel(node_attr_lab, adj_mat_lab)
 
-    #emb_loss = embd_loss(edge_gt, gt_node_embd, x_out)
-    loss = F.mse_loss(pred_node_embd, gt_node_embd) + lnk_loss1 + lnk_loss2 + entro_loss1 + entro_loss2 + emb_loss1
+    emb_loss = embd_loss(gt_edges_out, gt_nodes_out)
+    loss = F.mse_loss(pred_node_embd, gt_node_embd) + lnk_loss1 + lnk_loss2 + entro_loss1 + entro_loss2 + emb_loss1 + emb_loss
+    #loss = lnk_loss1 + entro_loss1 + emb_loss1 
     loss.backward()
     optimizer.step()
     boptim.step()
@@ -187,7 +223,7 @@ dataset = dataset.shuffle(1000)
 
 
 
-EPOCHS = 10
+EPOCHS = 2
 coun = 0
 run_t = 0
 run_nod = 0
@@ -205,8 +241,10 @@ optimizer = optim.Adam(model.parameters(), lr=.0001)
 
 bmodel = Bonv().to(device)
 boptim = optim.Adam(bmodel.parameters(), lr=.0001)
-""" 
-checkpoint = torch.load('./data/model/torch1.pt')
+arr = np.load('./data/numpy_arrays/mask_co.npy')
+arr = np.reshape(arr, (1, 2, 512, 512))
+arr = torch.Tensor(arr).cuda()
+""" checkpoint = torch.load('./data/model/tor_norm.pt')
 model.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 bmodel.load_state_dict(checkpoint['bmodel_state_dict'])
@@ -222,8 +260,11 @@ for epoch in range(EPOCHS):
         i = torch.Tensor(i).cuda()
         n = torch.Tensor(n).cuda()
         a = torch.Tensor(a).cuda()
-
-        metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer, boptim)
+    
+        i = torch.cat((i,arr),1)
+        #print(i.shape)
+        #print(asd)
+        metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer)
 
         run_t = run_t + metric/2000
         #run_nod = run_nod + node_loss/2000
@@ -243,12 +284,12 @@ for epoch in range(EPOCHS):
     #model.save_weights('./data/model/weight_out_128.h5')
     #model.load_weights('./data/model/weight.h5')
     #model.save_weights('./data/model/weight_softmax.h5')
-    torch.save({
+    """ torch.save({
             'model_state_dict': model.state_dict(),
-            'bmodel_state_dict': bmodel.state_dict,
+            'bmodel_state_dict': bmodel.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'boptim_state_dict': boptim.state_dict(),
-            }, './data/model/torch1.pt')
+            }, './data/model/tor_norm.pt') """
 
     counter = 0
     for i,n,a in dataset:
@@ -261,8 +302,8 @@ for epoch in range(EPOCHS):
         i = torch.Tensor(i).cuda()
         n = torch.Tensor(n).cuda()
         a = torch.Tensor(a).cuda()
-
-        metric, nodes_out, edges_out = train_step(i,n,a,dim, optimizer, boptim)
+        inputi = torch.cat((i,arr),1)
+        metric, nodes_out, edges_out = train_step(inputi,n,a,dim, optimizer)
         node_features = nodes_out.cpu().detach().numpy()
         new_adj = edges_out.cpu().detach().numpy()
         i = i.cpu().detach().numpy()
@@ -283,43 +324,4 @@ for epoch in range(EPOCHS):
             break
 
 
-print(asd)
-dataset_test = tf.data.TFRecordDataset('./data/record/val.tfrecords')
-dataset_test = dataset_test.map(_parse_function)
-#dataset_test = dataset_test.shuffle(6000)
-
-
-counter = 0
-for i,n,a in dataset:
-    dim = int(math.sqrt(int(a.shape[0])))
-    i = np.reshape(i, (1,256,256,3))
-    node_features, new_adj = model(i)
-
-    #pred_dim = (num_nodes-num_b)/num_a
-    #pred_dim = tf.math.exp(pred_dim)
-    #pred_dim = np.array(pred_dim)
-    #pred_dim = pred_dim.item()
-    #pred_dim = int(pred_dim)
-
-
-    #new_adj = new_adj[0:pred_dim,0:pred_dim]
-    #node_features = node_features[0:pred_dim,:]
-    #new_adj = new_adj[0:pred_dim,0:pred_dim]
-    #node_features = node_features[0:pred_dim,:]
-
-    #node_features = (((node_features - node_b)/node_a)*node_std)+node_mean
-    node_features = (node_features - node_b)/node_a
-    node_features = qt.inverse_transform(node_features)
-
-    new_adj = np.where(new_adj>.5, 1.0 , 0)
-    np.savetxt('./data/output/adj'+str(counter)+'.txt', new_adj)
-    np.savetxt('./data/output/node'+str(counter)+'.txt',node_features)
-    image = i*255.0
-    image = np.reshape(image,(256,256,3))
-    image = np.asarray(image, dtype=np.uint8)
-
-    cv2.imwrite('./data/output/img'+str(counter)+'.png',image)
-    counter+=1
-    if counter==6:
-        break
     

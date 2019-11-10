@@ -54,7 +54,7 @@ class Bonv(nn.Module):
     def forward(self, nodes, adjs):
         edge, _ = dense_to_sparse(adjs)
         x = self.sage1(nodes, edge)
-        s = self.sage2(nodes, edge)
+        """ s = self.sage2(nodes, edge)
         s = torch.reshape(s, (1,nodes.size(0),128))
         
         x = torch.reshape(x, (1,nodes.size(0),128))
@@ -66,8 +66,8 @@ class Bonv(nn.Module):
         x = torch.reshape(x, (128,128))
         
         edge = torch.reshape(edge, (128,128))
-        #for i in range(edge.size(0)):
-        #    edge[i,:] = torch.where(edge[i,:] == torch.max(edge[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
+        for i in range(edge.size(0)):
+            edge[i,:] = torch.where(edge[i,:] == torch.max(edge[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
         
         edge_out = edge
         edge, _ = dense_to_sparse(edge)
@@ -75,7 +75,7 @@ class Bonv(nn.Module):
         x = self.sage3(x, edge)
         nodes_out = torch.tanh(x)
 
-        #x = self.sage4(nodes_out, edge)
+        #x = self.sage4(nodes_out, edge) """
 
         edge = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
         edge = torch.reshape(edge, (1,128,128))
@@ -136,6 +136,9 @@ class Conv(nn.Module):
 
         edge = torch.Tensor(ori_adjacen).long().t().contiguous().cuda()
 
+        #edge = torch.empty(256, 256).uniform_(0, 1).cuda()
+        #edge, _ = dense_to_sparse(edge)
+
         x = self.sage1(org, edge)
         s = self.sage2(org, edge)
         s = torch.reshape(s, (1,256,128))
@@ -145,24 +148,37 @@ class Conv(nn.Module):
         edge = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
         edge = torch.reshape(edge, (1,256,256))
 
+        #x = torch.empty(1, 256, 128).uniform_(0, 1).cuda()
+        #s = torch.empty(1, 256, 128).uniform_(0, 1).cuda()
+
         x, edge, link_loss1, ent_loss1 = dense_diff_pool(x, edge, s)
         #x = torch.tanh(x)
         
         x = torch.reshape(x, (128,128))
         
         edge = torch.reshape(edge, (128,128))
+        #print(edge)
+        #for i in range(edge.size(0)):
+        #    print(torch.argmax(edge[i,:]))
+        #    if i == 50:
+        #        break
         edge_out = edge
         for i in range(edge_out.size(0)):
             edge_out[i,:] = torch.where(edge_out[i,:] == torch.max(edge_out[i,:]),torch.ones(1,128).cuda(), torch.zeros(1,128).cuda())
         
+        #print(edge_out)
+        #print(asd)
+        #print(edge)
         edge, _ = dense_to_sparse(edge)
+        #print(edge)
         #nodes_out = x
         x = self.sage3(x, edge)
         nodes_out = torch.tanh(x)
         x = nodes_out
         #x = self.sage4(nodes_out, edge)
         edge_dense = edge
-
+        #print(edge, edge_out)
+        #print(asd)
         edge = torch.Tensor(convert.to_scipy_sparse_matrix(edge).todense()).cuda()
         #print(edge)
         #print(asd)
@@ -171,13 +187,14 @@ class Conv(nn.Module):
         x = torch.reshape(x, (1,128,2))
 
         s = torch.ones(1,128,1).cuda()
-        x, edge, link_loss2, ent_loss2 = dense_diff_pool(x, edge, s)
+        x, edge_dead, link_loss2, ent_loss2 = dense_diff_pool(x, edge, s)
 
         x = x.reshape(-1)
         
         link_loss = link_loss1 + link_loss2
         ent_loss = ent_loss1 + ent_loss2
-        
+        #print(edge_out, edge )
+        #print(asd)
         return x, link_loss, ent_loss, nodes_out, edge_out, edge_dense
 
 def embd_loss(edge_idx, z):
@@ -196,14 +213,14 @@ def train_step(images, node_attr_lab, adj_mat_lab, dim, optimizer):
     model.train()
     optimizer.zero_grad()
     pred_node_embd, lnk_loss1, entro_loss1, nodes_out, edges_out, edge_dense = model(images)
-    emb_loss1 = embd_loss(edge_dense, nodes_out)
+    #emb_loss1 = embd_loss(edge_dense, nodes_out)
 
     bmodel.train()
     boptim.zero_grad()
     gt_node_embd, lnk_loss2, entro_loss2, gt_nodes_out, gt_edges_out = bmodel(node_attr_lab, adj_mat_lab)
 
     emb_loss = embd_loss(gt_edges_out, gt_nodes_out)
-    loss = F.mse_loss(pred_node_embd, gt_node_embd) + lnk_loss1 + lnk_loss2 + entro_loss1 + entro_loss2 + emb_loss1 + emb_loss
+    loss = F.mse_loss(pred_node_embd, gt_node_embd) + lnk_loss1 + lnk_loss2 + entro_loss1 + entro_loss2 + emb_loss
     #loss = lnk_loss1 + entro_loss1 + emb_loss1 
     loss.backward()
     optimizer.step()
